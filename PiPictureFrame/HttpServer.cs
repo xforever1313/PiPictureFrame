@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -183,7 +184,16 @@ namespace PiPictureFrame.Core
                     string url = request.RawUrl.ToLower();
                     if( ( url == "/" ) || ( url == "/index.html" ) )
                     {
-                        //TODO: add index.html logic.
+                        responseString = ReadFile( Path.Combine( "html", "index.html" ) );
+                    }
+                    else if( url.EndsWith( ".css" ) || url.EndsWith( ".js" ) )
+                    {
+                        responseString = GetJsOrCssFile( url );
+                        if( string.IsNullOrEmpty( responseString ) )
+                        {
+                            responseString = Get404Html();
+                            response.StatusCode = Convert.ToInt32( HttpStatusCode.NotFound );
+                        }
                     }
                     else
                     {
@@ -232,6 +242,54 @@ namespace PiPictureFrame.Core
         }
 
         // ---- HTML Functions ----
+
+        /// <summary>
+        /// Reads the given file to the end.
+        /// Returns string.Empty if the file does not exist.
+        /// </summary>
+        /// <param name="path">The path to read.</param>
+        /// <returns>The string of the file.</returns>
+        private static string ReadFile( string path )
+        {
+            string fileConents = string.Empty;
+            if( File.Exists( path ) )
+            {
+                using( StreamReader inFile = new StreamReader( path ) )
+                {
+                    fileConents = inFile.ReadToEnd();
+                }
+            }
+
+            return fileConents;
+        }
+
+        private static Regex cssPattern = new Regex( @"/(?<jsOrCss>(js|css))/(?<pure>pure/)?(?<file>[\w-\d]+\.(css|js))", RegexOptions.Compiled );
+
+        /// <summary>
+        /// Reads in the given JS or CSS file.
+        /// </summary>
+        /// <param name="url">The URL to grab.</param>
+        /// <returns>The CSS or JS contents.</returns>
+        private static string GetJsOrCssFile( string url )
+        {
+            string filePath;
+            Match cssMatch = cssPattern.Match( url );
+            if( cssMatch.Success )
+            {
+                filePath = Path.Combine(
+                    "html",
+                    cssMatch.Groups["jsOrCss"].Value,
+                    cssMatch.Groups["pure"].Value,
+                    cssMatch.Groups["file"].Value
+                );
+            }
+            else
+            {
+                return string.Empty;
+            }
+
+            return ReadFile( filePath );
+        }
 
         /// <summary>
         /// Gets the internal server error html.
