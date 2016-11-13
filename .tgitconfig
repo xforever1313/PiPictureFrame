@@ -1,5 +1,5 @@
 [bugtraq]
-	url = https://gitlab.com/xforever1313/pi-picture-frame/issues/%BUGID%
+	url = https://github.com/xforever1313/PiPictureFrame/issues/%BUGID%
 	label = Issue ID:
 	append = false
 	number = true
