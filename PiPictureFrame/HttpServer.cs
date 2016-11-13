@@ -34,6 +34,10 @@ namespace PiPictureFrame.Core
         /// </summary>
         private Thread listeningThread;
 
+        private bool isListening;
+
+        private object isListeningLock;
+
         private readonly ManualResetEvent quitEvent;
 
         // ---------------- Events ----------------
@@ -60,6 +64,8 @@ namespace PiPictureFrame.Core
             }
 
             this.quitEvent = new ManualResetEvent( false );
+
+            this.isListeningLock = new object();
             this.IsListening = false;
 
             this.listener = new HttpListener();
@@ -74,7 +80,23 @@ namespace PiPictureFrame.Core
         /// <summary>
         /// Whether or not we are listening.
         /// </summary>
-        public bool IsListening { get; private set; }
+        public bool IsListening
+        {
+            get
+            {
+                lock( this.isListeningLock )
+                {
+                    return this.isListening;
+                }
+            }
+            private set
+            {
+                lock( this.isListeningLock )
+                {
+                    this.isListening = value;
+                }
+            }
+        }
 
         // ---------------- Functions ----------------
 
@@ -105,9 +127,9 @@ namespace PiPictureFrame.Core
             {
                 this.LoggingAction?.Invoke( "Terminating server..." );
                 this.IsListening = false;
+                this.listener.Stop();
                 this.listeningThread.Join();
 
-                this.listener.Stop();
                 this.listener.Close();
 
                 this.LoggingAction?.Invoke( "Terminating server...Done!" );
@@ -140,6 +162,7 @@ namespace PiPictureFrame.Core
                     // the thread will exit cleanly.
                     if( err.ErrorCode == 995 )
                     {
+                        this.LoggingAction?.Invoke( "Server got terminated, shutting down..." );
                         continue;
                     }
                     else
@@ -161,6 +184,11 @@ namespace PiPictureFrame.Core
                     if( ( url == "/" ) || ( url == "/index.html" ) )
                     {
                         //TODO: add index.html logic.
+                    }
+                    else
+                    {
+                        responseString = Get404Html();
+                        response.StatusCode = Convert.ToInt32( HttpStatusCode.NotFound );
                     }
                 }
                 catch( Exception e )
@@ -248,6 +276,33 @@ namespace PiPictureFrame.Core
 </html>
 ";
             return html;
+        }
+
+        /// <summary>
+        /// Gets the 404 html.
+        /// </summary>
+        /// <returns>HTML for the 404 page.</returns>
+        private static string Get404Html()
+        {
+            return
+@"<!doctype html>
+<head>
+    <meta http-equiv=""content-type"" content=""text/html; charset=utf-8"" />
+    <title>Pi Picture Frame Control.  Not Found.</title>
+    <style>
+        body
+        {
+            background-color:ffffff
+        }
+    </style>
+</head>
+<body>
+
+        <h1>404 Not Found</h1>
+
+</body>
+</html>
+";
         }
     }
 }
