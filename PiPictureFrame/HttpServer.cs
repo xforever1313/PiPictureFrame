@@ -41,6 +41,26 @@ namespace PiPictureFrame.Core
 
         private readonly ManualResetEvent quitEvent;
 
+        /// <summary>
+        /// Options for hour drop-downs.
+        /// </summary>
+        private static List<int> hourOptions;
+
+        /// <summary>
+        /// Options for minute drop-downs.
+        /// </summary>
+        private static List<int> minuteOptions;
+
+        /// <summary>
+        /// Options for changing pictures in minutes.
+        /// </summary>
+        private static List<int> picChangeIntervalOptions;
+
+        /// <summary>
+        /// Options for changing pictures in hours.
+        /// </summary>
+        private static List<int> picRefreshIntervalOptions;
+
         // ---------------- Events ----------------
 
         /// <summary>
@@ -74,6 +94,34 @@ namespace PiPictureFrame.Core
             this.listener.Prefixes.Add( "http://*:" + port + "/" );
 
             this.listeningThread = new Thread( () => this.HandleRequest() );
+        }
+
+        /// <summary>
+        /// Static Constructor.
+        /// </summary>
+        static HttpServer()
+        {
+            hourOptions = new List<int>();
+            for( int hour = 0; hour <= 23; ++hour )
+            {
+                hourOptions.Add( hour );
+            }
+
+            minuteOptions = new List<int>();
+            for( int minute = 0; minute <= 59; ++minute )
+            {
+                minuteOptions.Add( minute );
+            }
+
+            picChangeIntervalOptions = new List<int>()
+            {
+                1, 2, 3, 4, 5, 10, 15, 20, 30, 45, 60
+            };
+
+            picRefreshIntervalOptions = new List<int>()
+            {
+                1, 2, 3, 4, 5, 0
+            };
         }
 
         // ---------------- Properties ----------------
@@ -184,7 +232,11 @@ namespace PiPictureFrame.Core
                     string url = request.RawUrl.ToLower();
                     if( ( url == "/" ) || ( url == "/index.html" ) )
                     {
-                        responseString = ReadFile( Path.Combine( "html", "index.html" ) );
+                        responseString = GetIndexHtml();
+                    }
+                    else if( url == "/settings.html" )
+                    {
+                        responseString = GetSettingsHtml( string.Empty );
                     }
                     else if( url.EndsWith( ".css" ) || url.EndsWith( ".js" ) )
                     {
@@ -289,6 +341,80 @@ namespace PiPictureFrame.Core
             }
 
             return ReadFile( filePath );
+        }
+
+        /// <summary>
+        /// Gets the home page's html
+        /// </summary>
+        /// <returns>The home page's html.</returns>
+        private static string GetIndexHtml()
+        {
+            string html = ReadFile( Path.Combine( "html", "index.html" ) );
+            html = AddCommonHtml( html );
+
+            return html;
+        }
+
+        /// <summary>
+        /// Gets the setting page's html.
+        /// </summary>
+        /// <returns>The setting page's html.</returns>
+        private static string GetSettingsHtml( string errorMessage )
+        {
+            string html = ReadFile( Path.Combine( "html", "settings.html" ) );
+            html = AddCommonHtml( html );
+            html = AddSettingsHtml( html );
+            html = html.Replace( "{%ErrorMessage%}", errorMessage );
+
+            return html;
+        }
+
+        /// <summary>
+        /// Adds the common html stuff to each page.
+        /// </summary>
+        /// <param name="html">The HTML to add the common stuff to.</param>
+        /// <returns>HTML with common stuff added.</returns>
+        private static string AddCommonHtml( string html )
+        {
+            html = html.Replace( "{%CommonHead%}", ReadFile( Path.Combine( "html", "CommonHead.html" ) ) );
+            html = html.Replace( "{%SideBar%}", ReadFile( Path.Combine( "html", "Sidebar.html" ) ) );
+
+            return html;
+        }
+
+        /// <summary>
+        /// Adds setting html things.
+        /// </summary>
+        /// <param name="html">Adds the settings HTML</param>
+        /// <returns></returns>
+        private static string AddSettingsHtml( string html )
+        {
+            html = html.Replace( "{%HourOptions%}", ListToHtmlOptions( hourOptions ) );
+            html = html.Replace( "{%MinuteOptions%}", ListToHtmlOptions( minuteOptions ) );
+            html = html.Replace( "{%RefreshOptions%}", ListToHtmlOptions( picRefreshIntervalOptions ) );
+            html = html.Replace( "{%IntervalOptions%}", ListToHtmlOptions( picChangeIntervalOptions ) );
+
+            return html;
+        }
+
+        /// <summary>
+        /// Converts list to html options
+        /// </summary>
+        /// <param name="list">List to convert to.</param>
+        /// <returns>Returns the HTML options from the list.</returns>
+        private static string ListToHtmlOptions<T>( IList<T> list )
+        {
+            StringBuilder builder = new StringBuilder();
+            foreach( T element in list )
+            {
+                builder.AppendFormat(
+                    "<option>{0}</option>{1}",
+                    element.ToString(),
+                    Environment.NewLine
+                );
+            }
+
+            return builder.ToString();
         }
 
         /// <summary>

@@ -1,0 +1,88 @@
+﻿<!DOCTYPE html>
+
+<html lang="en">
+<head>
+{%CommonHead%}
+</head>
+<body>
+    <div id="layout">
+{%SideBar%}
+        <div id="main">
+            <div class="header">
+                <h1>Pi Picture Frame</h1>
+                <h2>Settings Control</h2>
+            </div>
+
+            <div class="content">
+                <p>{%Error Message%}</p>
+
+                <form class="pure-form" action="/updatesettings.html" method="POST">
+                    <h2 class="content-subhead">Change Sleep/Awake Time:</h2>
+                    <p>
+                        <label for="sleepTimeHour">Turn off screen at:</label>
+                    </p>
+                    <p>
+                        <select id="sleepTimeHour">
+                            {%HourOptions%}
+                        </select>
+                        :
+                        <select id="sleepTimeMin">
+                            {%MinuteOptions%}
+                        </select>
+                    </p>
+
+                    <p>
+                        <label for="wakeTimeHour">Turn on screen at:</label>
+                    </p>
+                    <p>
+                        <select id="wakeTimeHour">
+                            {%HourOptions%}
+                        </select>
+                        :
+                        <select id="wakeTimeMin">
+                            {%MinuteOptions%}
+                        </select>
+                    </p>
+
+                    <p>
+                        <label for="noSleepCheckbox" class="pure-checkbox">
+                            <input id="noSleepCheckbox" type="checkbox">
+                            Never go to sleep.
+                            </input>
+                        </label>
+                    </p>
+
+                    <h2 class="content-subhead">Directories Folders to show (Recursive):</h2>
+                    <p>
+                        <label for="folderTextbox">Directories to search for photos (one directory per line):</label>
+                    </p>
+                    <p>
+                        <textarea class="pure-input-1-2">/home/pictureframe/photos/</textarea>
+                    </p>
+                    <p>
+                        <label for="refreshInterval">How often to check for new photos (hours).  Zero for never:</label>
+                    </p>
+                    <p>
+                        <select id="refreshInterval">
+                            {%RefreshOptions%}
+                        </select>
+                    </p>
+
+                    <h2 class="content-subhead">Photo Change Interval:</h2>
+                    <p>
+                        <label for="interval">Change photo every __ minutes:</label>
+                    </p>
+                    <p>
+                        <select id="interval">
+                            {%IntervalOptions%}
+                        </select>
+                    </p>
+                    <p>
+                        <input id="updateSettingsButton" class="button-xlarge button-blue pure-button" name="updateSettingsButton" type="submit" value="Update Settings" />
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
