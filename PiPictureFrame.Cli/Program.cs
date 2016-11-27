@@ -8,8 +8,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using PiPictureFrame.Core;
+using static PiPictureFrame.Core.HttpServer;
 
 namespace PiPictureFrame.Cli
 {
@@ -32,12 +34,17 @@ namespace PiPictureFrame.Cli
                 }
             }
 
+            QuitReason reason;
             using( HttpServer server = new HttpServer( port ) )
             {
                 server.LoggingAction += ( s => Console.WriteLine( s ) );
                 server.Start();
-                Console.ReadLine();
+                reason = server.WaitForQuitEvent();
+                Console.WriteLine( "Waiting 5 seconds to finish all requests..." );
+                Thread.Sleep( 5 * 1000 );
             }
+
+            Console.WriteLine( "Quit Reason: " + reason );
 
             return 0;
         }

@@ -16,6 +16,18 @@ using System.Threading.Tasks;
 
 namespace PiPictureFrame.Core
 {
+    /// <summary>
+    /// Runs the HTTP Server class.
+    /// Note, the user may request to shutdown the frame from the web-interface.
+    /// This class does not handle that.  After calling Start() on this class,
+    /// call WaitForQuitEvent().  This will return if the user wants to exit to the desktop,
+    /// Restart the system, or shutdown the system.  It is then up to the caller to
+    /// call Dispose on this class, and then handle what the user wishes for the system to do
+    /// based on the returned QuitReason from WaitForQuitEvent.
+    /// 
+    /// Recommended to add a delay between calling WaitForQuitEvent and Dispose so CSS and JS will
+    /// be retrieved before shutting down the server.
+    /// </summary>
     public class HttpServer : IDisposable
     {
         // ---------------- Fields ----------------
@@ -29,6 +41,13 @@ namespace PiPictureFrame.Core
         /// Reference to http listener.
         /// </summary>
         private readonly HttpListener listener;
+
+        /// <summary>
+        /// Why the server quit.
+        /// </summary>
+        private QuitReason quitReason;
+
+        private object quitReasonLock;
 
         /// <summary>
         /// Thread that does the listening.
@@ -61,6 +80,39 @@ namespace PiPictureFrame.Core
         /// </summary>
         private static List<int> picRefreshIntervalOptions;
 
+        // ---------------- Enums ----------------
+
+        /// <summary>
+        /// The reason why the server quit.
+        /// </summary>
+        public enum QuitReason
+        {
+            /// <summary>
+            /// Nothing, the system is still running.
+            /// </summary>
+            None,
+
+            /// <summary>
+            /// Dispose method was called on the class.
+            /// </summary>
+            Disposed,
+
+            /// <summary>
+            /// The user wants the system to reboot.
+            /// </summary>
+            Restarting,
+
+            /// <summary>
+            /// The user wants the system to shutdown.
+            /// </summary>
+            ShuttingDown,
+
+            /// <summary>
+            /// The user wants the system to exit to the desktop.
+            /// </summary>
+            ExitToDesktop
+        }
+
         // ---------------- Events ----------------
 
         /// <summary>
@@ -84,6 +136,8 @@ namespace PiPictureFrame.Core
                 );
             }
 
+            this.quitReason = QuitReason.None;
+            this.quitReasonLock = new object();
             this.quitEvent = new ManualResetEvent( false );
 
             this.isListeningLock = new object();
@@ -125,6 +179,30 @@ namespace PiPictureFrame.Core
         }
 
         // ---------------- Properties ----------------
+
+        /// <summary>
+        /// The reason why the server quit.
+        /// Set to None while running.
+        /// 
+        /// Thread-safe.
+        /// </summary>
+        public QuitReason ExitReason
+        {
+            get
+            {
+                lock( this.quitReasonLock )
+                {
+                    return this.quitReason;
+                }
+            }
+            private set
+            {
+                lock( this.quitReasonLock )
+                {
+                    this.quitReason = value;
+                }
+            }
+        }
 
         /// <summary>
         /// Whether or not we are listening.
@@ -171,10 +249,34 @@ namespace PiPictureFrame.Core
         /// </summary>
         public void Dispose()
         {
+            // Only set the quit reason if we are currently running.
+            // Otherwise, we quit for a different reason, so don't change it.
+            if( this.quitReason == QuitReason.None )
+            {
+                this.quitReason = QuitReason.Disposed;
+            }
+            this.StopServer();
+        }
+
+        /// <summary>
+        /// Blocks the calling thread(s) until the quit event is triggered.
+        /// </summary>
+        /// <returns>
+        /// The reason why the user wishes to quit.   It is up to the caller of this class to
+        /// call Dispose, and to handle what the user wants to do based on the QuitReason.
+        /// </returns>
+        public QuitReason WaitForQuitEvent()
+        {
+            this.quitEvent.WaitOne();
+            return this.quitReason;
+        }
+
+        private void StopServer()
+        {
             // No-op if we are not listening.
             if( this.IsListening )
             {
-                this.LoggingAction?.Invoke( "Terminating server..." );
+                this.LoggingAction?.Invoke( "Terminating server due to reason " + this.quitReason + "..." );
                 this.IsListening = false;
                 this.listener.Stop();
                 this.listeningThread.Join();
@@ -185,14 +287,6 @@ namespace PiPictureFrame.Core
 
                 this.quitEvent.Set();
             }
-        }
-
-        /// <summary>
-        /// Blocks the calling thread(s) until the quit event is triggered.
-        /// </summary>
-        public void WaitForQuitEvent()
-        {
-            this.quitEvent.WaitOne();
         }
 
         private void HandleRequest()
@@ -237,6 +331,28 @@ namespace PiPictureFrame.Core
                     else if( url == "/settings.html" )
                     {
                         responseString = GetSettingsHtml( string.Empty );
+                    }
+                    else if( url == "/turnoff.html" )
+                    {
+                        responseString = GetTurnOffHtml( string.Empty );
+                    }
+                    else if( url == "/about.html" )
+                    {
+                    }
+                    else if( url == "/sleep.html" )
+                    {
+                    }
+                    else if( url == "/linux.html" )
+                    {
+                        responseString = HandleExitToDesktopRequest( request.HttpMethod );
+                    }
+                    else if( url == "/restart.html" )
+                    {
+                        responseString = HandleRestartSystemRequest( request.HttpMethod );
+                    }
+                    else if( url == "/shutdown.html" )
+                    {
+                        responseString = HandleShutdownSystemRequest( request.HttpMethod );
                     }
                     else if( url.EndsWith( ".css" ) || url.EndsWith( ".js" ) )
                     {
@@ -291,6 +407,9 @@ namespace PiPictureFrame.Core
                     request.HttpMethod + " from: " + request.UserHostName + " " + request.UserHostAddress + " " + request.RawUrl + " (" + response.StatusCode + ")"
                 );
             }
+
+            // Our thread is exiting, notify all threads waiting on it.
+            this.quitEvent.Set();
         }
 
         // ---- HTML Functions ----
@@ -370,6 +489,20 @@ namespace PiPictureFrame.Core
         }
 
         /// <summary>
+        /// Gets the turn-off page's html.
+        /// </summary>
+        /// <param name="message">Message to tell the user.</param>
+        /// <returns>The turn-off page's html.</returns>
+        private static string GetTurnOffHtml( string message )
+        {
+            string html = ReadFile( Path.Combine( "html", "turnoff.html" ) );
+            html = html.Replace( "{%Message%}", message );
+            html = AddCommonHtml( html );
+
+            return html;
+        }
+
+        /// <summary>
         /// Adds the common html stuff to each page.
         /// </summary>
         /// <param name="html">The HTML to add the common stuff to.</param>
@@ -395,6 +528,72 @@ namespace PiPictureFrame.Core
             html = html.Replace( "{%IntervalOptions%}", ListToHtmlOptions( picChangeIntervalOptions ) );
 
             return html;
+        }
+
+        /// <summary>
+        /// Handles a request to exit to the desktop.
+        /// </summary>
+        /// <param name="request">The HTTP Request that was received.</param>
+        /// <returns>The HTML to return to the user.</returns>
+        private string HandleExitToDesktopRequest( string method )
+        {
+            string response;
+            if( method == "POST" )
+            {
+                response = GetTurnOffHtml( "The frame will exit to the desktop in ~5 seconds." );
+                this.quitReason = QuitReason.ExitToDesktop;
+                this.quitEvent.Set();
+            }
+            else
+            {
+                response = GetTurnOffHtml( "Must POST request to exit to desktop" );
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Handles a request to shutdown the system.
+        /// </summary>
+        /// <param name="request">The HTTP Request that was received.</param>
+        /// <returns>The HTML to return to the user.</returns>
+        private string HandleShutdownSystemRequest( string method )
+        {
+            string response;
+            if( method == "POST" )
+            {
+                response = GetTurnOffHtml( "The frame will start the shutdown sequence in ~5 seconds." );
+                this.quitReason = QuitReason.ShuttingDown;
+                this.quitEvent.Set();
+            }
+            else
+            {
+                response = GetTurnOffHtml( "Must POST request to shutdown system." );
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Handles a request to shutdown the system.
+        /// </summary>
+        /// <param name="request">The HTTP Request that was received.</param>
+        /// <returns>The HTML to return to the user.</returns>
+        private string HandleRestartSystemRequest( string method )
+        {
+            string response;
+            if( method == "POST" )
+            {
+                response = GetTurnOffHtml( "The frame will start the restart sequence in ~5 seconds." );
+                this.quitReason = QuitReason.Restarting;
+                this.quitEvent.Set();
+            }
+            else
+            {
+                response = GetTurnOffHtml( "Must POST request to restart system." );
+            }
+
+            return response;
         }
 
         /// <summary>

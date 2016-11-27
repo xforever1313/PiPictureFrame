@@ -181,6 +181,9 @@
     <Content Include="html\css\pure\two-col.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="html\turnoff.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="html\settings.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

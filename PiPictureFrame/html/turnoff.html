@@ -1,0 +1,44 @@
+﻿<!DOCTYPE html>
+
+<html lang="en">
+<head>
+{%CommonHead%}
+</head>
+<body>
+    <div id="layout">
+{%SideBar%}
+        <div id="main">
+            <div class="header">
+                <h1>Pi Picture Frame</h1>
+                <h2>Turn-off Menu</h2>
+            </div>
+
+            <div class="content">
+
+                <p>{%Message%}</p>
+
+                <form action="/sleep.html" method="post">
+                    <p>
+                        <input id="sleepButton" class="button-xlarge button-green pure-button" name="sleepButton" type="submit" value="Turn screen off" />
+                    </p>
+                </form>
+                <form action="/linux.html" method="post">
+                    <p>
+                        <input id="exitButton" class="button-xlarge button-blue pure-button" name="exitButton" type="submit" value="Exit to Desktop" />
+                    </p>
+                </form>
+                <form action="/restart.html" method="post">
+                    <p>
+                        <input id="restartButton" class="button-xlarge button-orange pure-button" name="restartButton" type="submit" value="Restart System" />
+                    </p>
+                </form>
+                <form action="/shutdown.html" method="post">
+                    <p>
+                        <input id="shutdownButton" class="button-xlarge button-red pure-button" name="shutdownButton" type="submit" value="Shutdown System" />
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
