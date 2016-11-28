@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PiPictureFrame.Core", "PiPi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PiPictureFrame.Cli", "PiPictureFrame.Cli\PiPictureFrame.Cli.csproj", "{F1C891D4-B892-44AA-94A7-40FBFF0036D2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PiPictureFrame.Service", "PiPictureFrame.Service\PiPictureFrame.Service.csproj", "{9DCAF1A7-DBCB-42EF-BD2C-BB8E2F821348}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{F1C891D4-B892-44AA-94A7-40FBFF0036D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F1C891D4-B892-44AA-94A7-40FBFF0036D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F1C891D4-B892-44AA-94A7-40FBFF0036D2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9DCAF1A7-DBCB-42EF-BD2C-BB8E2F821348}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9DCAF1A7-DBCB-42EF-BD2C-BB8E2F821348}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9DCAF1A7-DBCB-42EF-BD2C-BB8E2F821348}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9DCAF1A7-DBCB-42EF-BD2C-BB8E2F821348}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
