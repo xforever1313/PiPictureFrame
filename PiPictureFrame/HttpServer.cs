@@ -503,6 +503,20 @@ namespace PiPictureFrame.Core
         }
 
         /// <summary>
+        /// Gets the shutdown page's html.
+        /// </summary>
+        /// <param name="message">The message to tell the user.</param>
+        /// <returns>The shutdown page's html.</returns>
+        private static string GetShutdownHtml( string message )
+        {
+            string html = ReadFile( Path.Combine( "html", "shutdown.html" ) );
+            html = html.Replace( "{%Message%}", message );
+            html = AddCommonHtml( html );
+
+            return html;
+        }
+
+        /// <summary>
         /// Adds the common html stuff to each page.
         /// </summary>
         /// <param name="html">The HTML to add the common stuff to.</param>
@@ -540,7 +554,7 @@ namespace PiPictureFrame.Core
             string response;
             if( method == "POST" )
             {
-                response = GetTurnOffHtml( "The frame will exit to the desktop in ~5 seconds.  This webpage will no longer show up." );
+                response = GetShutdownHtml( "The frame will exit to the desktop in ~5 seconds.  This webpage will no longer show up." );
                 this.quitReason = QuitReason.ExitToDesktop;
                 this.quitEvent.Set();
             }
@@ -562,7 +576,7 @@ namespace PiPictureFrame.Core
             string response;
             if( method == "POST" )
             {
-                response = GetTurnOffHtml( "The frame will start the shutdown sequence in ~5 seconds.  This webpage will no longer show up." );
+                response = GetShutdownHtml( "The frame will start the shutdown sequence in ~5 seconds.  This webpage will no longer show up." );
                 this.quitReason = QuitReason.ShuttingDown;
                 this.quitEvent.Set();
             }
@@ -584,7 +598,7 @@ namespace PiPictureFrame.Core
             string response;
             if( method == "POST" )
             {
-                response = GetTurnOffHtml( "The frame will start the restart sequence in ~5 seconds.  This webpage will no longer show up until it is done rebooting." );
+                response = GetShutdownHtml( "The frame will start the restart sequence in ~5 seconds.  This webpage will no longer show up until it is done rebooting." );
                 this.quitReason = QuitReason.Restarting;
                 this.quitEvent.Set();
             }
