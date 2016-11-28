@@ -119,7 +119,7 @@ namespace PiPictureFrame.Core
         /// Action that is taken when the server wants to print something to some
         /// text-based console.  The string argument is the string we want to print.
         /// </summary>
-        public Action<string> LoggingAction;
+        public event Action<string> LoggingAction;
 
         // ---------------- Constructor ----------------
 
@@ -540,7 +540,7 @@ namespace PiPictureFrame.Core
             string response;
             if( method == "POST" )
             {
-                response = GetTurnOffHtml( "The frame will exit to the desktop in ~5 seconds." );
+                response = GetTurnOffHtml( "The frame will exit to the desktop in ~5 seconds.  This webpage will no longer show up." );
                 this.quitReason = QuitReason.ExitToDesktop;
                 this.quitEvent.Set();
             }
@@ -562,7 +562,7 @@ namespace PiPictureFrame.Core
             string response;
             if( method == "POST" )
             {
-                response = GetTurnOffHtml( "The frame will start the shutdown sequence in ~5 seconds." );
+                response = GetTurnOffHtml( "The frame will start the shutdown sequence in ~5 seconds.  This webpage will no longer show up." );
                 this.quitReason = QuitReason.ShuttingDown;
                 this.quitEvent.Set();
             }
@@ -584,7 +584,7 @@ namespace PiPictureFrame.Core
             string response;
             if( method == "POST" )
             {
-                response = GetTurnOffHtml( "The frame will start the restart sequence in ~5 seconds." );
+                response = GetTurnOffHtml( "The frame will start the restart sequence in ~5 seconds.  This webpage will no longer show up until it is done rebooting." );
                 this.quitReason = QuitReason.Restarting;
                 this.quitEvent.Set();
             }

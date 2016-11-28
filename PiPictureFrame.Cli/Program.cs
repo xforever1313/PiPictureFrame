@@ -34,17 +34,11 @@ namespace PiPictureFrame.Cli
                 }
             }
 
-            QuitReason reason;
-            using( HttpServer server = new HttpServer( port ) )
+            Action<string> loggingAction = ( s => Console.WriteLine( s ) );
+            using( PictureFrame frame = new PictureFrame( port, loggingAction ) )
             {
-                server.LoggingAction += ( s => Console.WriteLine( s ) );
-                server.Start();
-                reason = server.WaitForQuitEvent();
-                Console.WriteLine( "Waiting 5 seconds to finish all requests..." );
-                Thread.Sleep( 5 * 1000 );
+                frame.Run();
             }
-
-            Console.WriteLine( "Quit Reason: " + reason );
 
             return 0;
         }
