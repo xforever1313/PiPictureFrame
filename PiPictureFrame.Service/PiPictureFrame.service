@@ -1,0 +1,16 @@
+﻿[Unit]
+Description=Raspberry Pi Picture Frame
+After=network.target
+
+[Service]
+Type=forking
+User=picframe
+WorkingDirectory=/home/picframe/.config/PiPictureFrame/bin
+ExecStart=/usr/bin/mono-service -l:/tmp/PiPictureFrame.lock -m:picframe /home/picframe/.config/PiPictureFrame/bin/PiPictureFrame.Service.exe
+ExecStop=kill `cat /tmp/PiPictureFrame.lock`
+TimeoutStopSecs=5
+Restart=always
+
+[Install]
+Alias=PiPictureFrame.service
+WantedBy=multi-user.target
