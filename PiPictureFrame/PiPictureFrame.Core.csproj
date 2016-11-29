@@ -44,10 +44,12 @@
   <ItemGroup>
     <Compile Include="HttpServer.cs" />
     <Compile Include="PictureFrame.cs" />
+    <Compile Include="PictureFrameConfig.cs" />
     <Compile Include="PictureListManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="config\SampleUserConfig.xml" />
     <Content Include="html\css\pure\base-context-min.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -220,6 +222,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+  <Import Project="..\SethCS\SethCS\SethCS.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

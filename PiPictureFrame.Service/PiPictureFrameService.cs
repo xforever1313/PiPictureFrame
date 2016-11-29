@@ -37,6 +37,7 @@ namespace PiPictureFrame.Service
         protected override void OnStart( string[] args )
         {
             this.frame = new PictureFrame();
+            this.frame.Init();
             this.frameTask = this.frame.RunAsync();
         }
 

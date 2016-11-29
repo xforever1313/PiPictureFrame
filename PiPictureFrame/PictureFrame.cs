@@ -6,10 +6,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace PiPictureFrame.Core
 {
@@ -23,27 +25,105 @@ namespace PiPictureFrame.Core
 
         private Action<string> loggingAction;
 
+        private PictureFrameConfig config;
+
+        private static readonly string rootFolder;
+
         // ---------------- Constructor ----------------
 
         /// <summary>
-        /// Constructor
+        /// Constructor.
         /// </summary>
-        /// <param name="httpPort">The port to have the web-interface run on.</param>
-        /// <param name="loggingAction">
-        /// Action that is taken when the server wants to print something to some
-        /// text-based console.  The string argument is the string we want to print.
-        /// </param>
-        public PictureFrame( short httpPort = 80, Action<string> loggingAction = null )
+        public PictureFrame()
         {
             this.isDisposed = false;
-            this.loggingAction = loggingAction;
-            this.server = new HttpServer( httpPort );
-            this.server.LoggingAction += this.loggingAction;
+        }
+
+        /// <summary>
+        /// Static Constructor.
+        /// </summary>
+        static PictureFrame()
+        {
+            rootFolder = Path.GetDirectoryName( UserConfigLocation );
         }
 
         // ---------------- Properties ----------------
 
+        /// <summary>
+        /// The location of the XML user configuration for the pi picture frame.
+        /// </summary>
+        public static string UserConfigLocation
+        {
+            get
+            {
+                return Path.Combine(
+                    Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ),
+                    "PiPicFrame",
+                    "UserConfig.xml"
+                );
+            }
+        }
+
         // ---------------- Functions ----------------
+
+        /// <summary>
+        /// Inits this class.
+        /// </summary>
+        /// <param name="loggingAction">
+        /// Action that is taken when the server wants to print something to some
+        /// text-based console.  The string argument is the string we want to print.
+        /// </param>
+        public void Init( Action<string> loggingAction = null )
+        {
+            this.loggingAction = loggingAction;
+
+            if( File.Exists( UserConfigLocation ) )
+            {
+                XmlDocument doc = new XmlDocument();
+                doc.Load( UserConfigLocation );
+                this.config = PictureFrameConfig.FromXml( doc.DocumentElement );
+            }
+            else
+            {
+                this.config = new PictureFrameConfig();
+                this.SaveConfig();
+            }
+
+            this.server = new HttpServer( config.Port );
+            this.server.LoggingAction += this.loggingAction;
+        }
+
+        /// <summary>
+        /// Saves the configuration to the UserXml file.
+        /// </summary>
+        public void SaveConfig()
+        {
+            if( this.config == null )
+            {
+                throw new InvalidOperationException( "Config is null, call " + nameof( this.Init ) + " first" );
+            }
+
+            XmlDocument doc = new XmlDocument();
+
+            // Create declaration.
+            XmlDeclaration dec = doc.CreateXmlDeclaration( "1.0", "UTF-8", null );
+
+            // Add declaration to document.
+            XmlElement root = doc.DocumentElement;
+            doc.InsertBefore( dec, root );
+
+            XmlElement configElement = doc.CreateElement( "pictureframeconfig" );
+            doc.AppendChild( configElement );
+
+            this.config.ToXml( configElement, doc );
+
+            if( Directory.Exists( rootFolder ) == false )
+            {
+                Directory.CreateDirectory( rootFolder );
+            }
+
+            doc.Save( UserConfigLocation );
+        }
 
         /// <summary>
         /// Runs the PictureFrame service.

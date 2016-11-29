@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8" ?> 
+<pictureframeconfig>
+    <!-- Sleep and awake time should have -1 for never. -->
+    <sleeptime hour="-1" minute="-1"/>
+    <awaketime hour="-1" minute="-1"/>
+    <photodirectory>/home/picframe/Photos</photodirectory>
+    <refreshinterval>360</refreshinterval>
+    <photochangeinterval>60</photochangeinterval>
+    <shutdowncommand>shutdown -Ph now</shutdowncommand>
+    <rebootcommand>reboot</rebootcommand>
+    <exittodesktopcommand>startx</exittodesktopcommand>
+    <httpport>80</httpport>
+</pictureframeconfig>
