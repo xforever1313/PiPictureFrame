@@ -11,7 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PiPictureFrame.Service", "P
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6984111F-064C-4781-9612-BBB76C7FBF4C}"
 	ProjectSection(SolutionItems) = preProject
+		.travis.yml = .travis.yml
 		PKGBUILD = PKGBUILD
+		README.md = README.md
+		RunTest.bat = RunTest.bat
 	EndProjectSection
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "SethCS", "SethCS\SethCS\SethCS.shproj", "{52089274-B9A2-4A47-A221-C321DEE1CE7F}"
