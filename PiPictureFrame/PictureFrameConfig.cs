@@ -15,6 +15,16 @@ namespace PiPictureFrame.Core
         /// </summary>
         public const string XmlNodeName = "pictureframeconfig";
 
+        private DateTime? sleepTime;
+
+        private DateTime? awakeTime;
+
+        /// <summary>
+        /// The default DateTime object to create others from (where we only modify
+        /// the minutes and hours).
+        /// </summary>
+        private static readonly DateTime defaultDateTime = new DateTime( 2016, 12, 25 );
+
         // ---------------- Constructor ----------------
 
         /// <summary>
@@ -52,7 +62,7 @@ namespace PiPictureFrame.Core
                         }
                         if( ( sleepHour > -1 ) && ( sleepMinute > -1 ) )
                         {
-                            config.SleepTime = new DateTime( 0, 0, 0, sleepHour, sleepMinute, 0 );
+                            config.SleepTime = new DateTime( defaultDateTime.Year, defaultDateTime.Month, defaultDateTime.Day, sleepHour, sleepMinute, 0 );
                         }
                         break;
 
@@ -73,7 +83,8 @@ namespace PiPictureFrame.Core
                         }
                         if( ( awakeHour > -1 ) && ( awakeMinute > -1 ) )
                         {
-                            config.AwakeTime = new DateTime( 0, 0, 0, awakeHour, awakeMinute, 0 );
+                            DateTime today = DateTime.UtcNow;
+                            config.AwakeTime = new DateTime( defaultDateTime.Year, defaultDateTime.Month, defaultDateTime.Day, awakeHour, awakeMinute, 0 );
                         }
                         break;
 
@@ -104,6 +115,10 @@ namespace PiPictureFrame.Core
                     case "httpport":
                         config.Port = short.Parse( childNode.InnerText );
                         break;
+
+                    case "brightness":
+                        config.Brightness = ushort.Parse( childNode.InnerText );
+                        break;
                 }
             }
 
@@ -121,13 +136,14 @@ namespace PiPictureFrame.Core
             this.SleepTime = null;
             this.AwakeTime = null;
 
-            this.PhotoDirectory = Path.Combine( "/home", Environment.UserName, "Photos" );
+            this.PhotoDirectory = Path.Combine( "/home", "picframe", "Photos" );
             this.PhotoRefreshInterval = new TimeSpan( 1, 0, 0 );
             this.PhotoChangeInterval = new TimeSpan( 0, 1, 0 );
             this.ShutdownCommand = "shutdown -Ph now";
             this.RebootCommand = "reboot";
-            this.ExitToDesktopCommand = "startx";
+            this.ExitToDesktopCommand = "chvt 7";
             this.Port = HttpServer.DefaultPort;
+            this.Brightness = 75;
         }
 
         // ---------------- Properties ----------------
@@ -138,7 +154,31 @@ namespace PiPictureFrame.Core
         /// 
         /// Only care about hour/minute.  Everything else is ignored.
         /// </summary>
-        public DateTime? SleepTime { get; set; }
+        public DateTime? SleepTime
+        {
+            get
+            {
+                return this.sleepTime;
+            }
+            set
+            {
+                if( value == null )
+                {
+                    this.sleepTime = value;
+                }
+                else
+                {
+                    this.sleepTime = new DateTime(
+                        defaultDateTime.Year,
+                        defaultDateTime.Month,
+                        defaultDateTime.Day,
+                        value.Value.Hour,
+                        value.Value.Minute,
+                        0
+                    );
+                }
+            }
+        }
 
         /// <summary>
         /// Time to wake up the screen.
@@ -146,7 +186,31 @@ namespace PiPictureFrame.Core
         /// 
         /// Only care about hour/minute.  Everything else is ignored.
         /// </summary>
-        public DateTime? AwakeTime { get; set; }
+        public DateTime? AwakeTime
+        {
+            get
+            {
+                return this.awakeTime;
+            }
+            set
+            {
+                if( value == null )
+                {
+                    this.awakeTime = value;
+                }
+                else
+                {
+                    this.awakeTime = new DateTime(
+                        defaultDateTime.Year,
+                        defaultDateTime.Month,
+                        defaultDateTime.Day,
+                        value.Value.Hour,
+                        value.Value.Minute,
+                        0
+                    );
+                }
+            }
+        }
 
         /// <summary>
         /// Directory to search for photos.
@@ -184,6 +248,11 @@ namespace PiPictureFrame.Core
         /// </summary>
         public short Port { get; set; }
 
+        /// <summary>
+        /// The brightness on a scale from 0-100.
+        /// </summary>
+        public ushort Brightness { get; set; }
+
         // ---------------- Functions ----------------
 
         /// <summary>
@@ -220,7 +289,12 @@ namespace PiPictureFrame.Core
             if( this.Port < 0 )
             {
                 success = false;
-                builder.AppendLine( nameof( this.Port ) + "can not be negative" );
+                builder.AppendLine( nameof( this.Port ) + " can not be negative" );
+            }
+            if( this.Brightness > 100 )
+            {
+                success = false;
+                builder.AppendLine( nameof( this.Brightness ) + " can not be more than 100" );
             }
 
             if( success == false )
@@ -267,7 +341,7 @@ namespace PiPictureFrame.Core
                 match &= this.SleepTime.Equals( other.SleepTime );
             }
 
-            if( this.SleepTime == null )
+            if( this.AwakeTime == null )
             {
                 match &= ( other.AwakeTime == null );
             }
@@ -283,6 +357,7 @@ namespace PiPictureFrame.Core
             match &= ( this.RebootCommand == other.RebootCommand );
             match &= ( this.ExitToDesktopCommand == other.ExitToDesktopCommand );
             match &= ( this.Port == other.Port );
+            match &= ( this.Brightness == other.Brightness );
 
             return match;
         }
@@ -308,6 +383,7 @@ namespace PiPictureFrame.Core
             hashCode += this.RebootCommand.GetHashCode();
             hashCode += this.ExitToDesktopCommand.GetHashCode();
             hashCode += this.Port.GetHashCode();
+            hashCode += this.Brightness.GetHashCode();
 
             return hashCode;
         }
@@ -419,6 +495,13 @@ namespace PiPictureFrame.Core
                 XmlElement httpPort = doc.CreateElement( "httpport" );
                 httpPort.InnerText = this.Port.ToString();
                 parentNode.AppendChild( httpPort );
+            }
+
+            // Brightness
+            {
+                XmlElement brightness = doc.CreateElement( "brightness" );
+                brightness.InnerText = this.Brightness.ToString();
+                parentNode.AppendChild( brightness );
             }
         }
     }

@@ -49,7 +49,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="config\SampleUserConfig.xml" />
+    <Content Include="config\SampleUserConfig.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="html\css\pure\base-context-min.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
