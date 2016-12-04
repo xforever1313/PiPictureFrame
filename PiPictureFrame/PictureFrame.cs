@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
+using PiPictureFrame.Core.Screens;
 
 namespace PiPictureFrame.Core
 {
@@ -48,6 +49,8 @@ namespace PiPictureFrame.Core
         }
 
         // ---------------- Properties ----------------
+
+        public IScreen Screen { get; private set; }
 
         /// <summary>
         /// The location of the XML user configuration for the pi picture frame.
@@ -89,7 +92,9 @@ namespace PiPictureFrame.Core
                 this.SaveConfig();
             }
 
-            this.server = new HttpServer( config.Port );
+            this.Screen = new PiTouchScreen( this.loggingAction ); // Only have pi trouch screen implemented now.
+
+            this.server = new HttpServer( this, config.Port );
             this.server.LoggingAction += this.loggingAction;
         }
 

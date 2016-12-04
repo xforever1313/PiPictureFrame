@@ -43,6 +43,11 @@ namespace PiPictureFrame.Core
         private readonly HttpListener listener;
 
         /// <summary>
+        /// The picture API.
+        /// </summary>
+        private readonly PictureFrame picFrame;
+
+        /// <summary>
         /// Why the server quit.
         /// </summary>
         private QuitReason quitReason;
@@ -126,8 +131,9 @@ namespace PiPictureFrame.Core
         /// <summary>
         /// Constructor.
         /// </summary>
+        /// <param name="screen">The picFrame API.</param>
         /// <param name="port">The port to listen on.</param>
-        public HttpServer( short port = DefaultPort )
+        public HttpServer( PictureFrame picFrame, short port = DefaultPort )
         {
             if( HttpListener.IsSupported == false )
             {
@@ -142,6 +148,8 @@ namespace PiPictureFrame.Core
 
             this.isListeningLock = new object();
             this.IsListening = false;
+
+            this.picFrame = picFrame;
 
             this.listener = new HttpListener();
 
@@ -310,7 +318,7 @@ namespace PiPictureFrame.Core
                     }
                     else
                     {
-                        this.LoggingAction?.Invoke( "FATAL ERROR:" + err.ToString() );
+                        this.LoggingAction?.Invoke( "FATAL ERROR (" + err.ErrorCode + "): " + err.ToString() );
                         throw;
                     }
                 }
@@ -341,6 +349,7 @@ namespace PiPictureFrame.Core
                     }
                     else if( url == "/sleep.html" )
                     {
+                        responseString = HandleSleepRequest( request.HttpMethod );
                     }
                     else if( url == "/linux.html" )
                     {
@@ -493,11 +502,14 @@ namespace PiPictureFrame.Core
         /// </summary>
         /// <param name="message">Message to tell the user.</param>
         /// <returns>The turn-off page's html.</returns>
-        private static string GetTurnOffHtml( string message )
+        private string GetTurnOffHtml( string message )
         {
             string html = ReadFile( Path.Combine( "html", "turnoff.html" ) );
             html = html.Replace( "{%Message%}", message );
             html = AddCommonHtml( html );
+
+            string onOrOff = this.picFrame.Screen.IsOn ? "Off" : "On";
+            html = html.Replace( "{%OnOrOff%}", onOrOff );
 
             return html;
         }
@@ -542,6 +554,22 @@ namespace PiPictureFrame.Core
             html = html.Replace( "{%IntervalOptions%}", ListToHtmlOptions( picChangeIntervalOptions ) );
 
             return html;
+        }
+
+        private string HandleSleepRequest( string method )
+        {
+            string response;
+            if( method == "POST" )
+            {
+                this.picFrame.Screen.IsOn = this.picFrame.Screen.IsOn == false;
+                response = GetTurnOffHtml( "Screen should have been toggled." );
+            }
+            else
+            {
+                response = GetTurnOffHtml( "Must POST request to toggle screen." );
+            }
+
+            return response;
         }
 
         /// <summary>
