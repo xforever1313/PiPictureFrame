@@ -61,7 +61,7 @@ namespace PiPictureFrame.Core
             {
                 return Path.Combine(
                     Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ),
-                    "PiPicFrame",
+                    "PiPictureFrame",
                     "UserConfig.xml"
                 );
             }
