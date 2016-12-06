@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -363,6 +364,10 @@ namespace PiPictureFrame.Core
                     {
                         responseString = HandleShutdownSystemRequest( request.HttpMethod );
                     }
+                    else if( url == "/current.jpg" )
+                    {
+                        this.HandleGetCurrentPictureRequest( response );
+                    }
                     else if( url.EndsWith( ".css" ) || url.EndsWith( ".js" ) )
                     {
                         responseString = GetJsOrCssFile( url );
@@ -614,6 +619,43 @@ namespace PiPictureFrame.Core
             }
 
             return response;
+        }
+
+        /// <summary>
+        /// Handles a request for gettings the current picture.
+        /// </summary>
+        /// <param name="response">Response being used.</param>
+        private void HandleGetCurrentPictureRequest( HttpListenerResponse response )
+        {
+            response.AddHeader( "Content-Encoding", "gzip" );
+            string picLocation = this.picFrame.CurrentPictureLocation;
+
+            int length = 0;
+
+            byte[] pictureContents;
+
+            using( MemoryStream ms = new MemoryStream() )
+            {
+                using( GZipStream gzip = new GZipStream( ms, CompressionMode.Compress, true ) )
+                {
+                    using( BinaryReader br = new BinaryReader( File.Open( picLocation, FileMode.Open, FileAccess.Read ) ) )
+                    {
+                        byte[] buffer = br.ReadBytes( 1028 );
+                        while( buffer.Length > 0 )
+                        {
+                            length += buffer.Length;
+                            gzip.Write( buffer, 0, buffer.Length );
+                            buffer = br.ReadBytes( 1028 );
+                        }
+                    }
+                }
+
+                pictureContents = ms.ToArray();
+            }
+
+            response.ContentType = "media/" + Path.GetExtension( picLocation ).TrimStart( '.' );
+            response.OutputStream.Write( pictureContents, 0, pictureContents.Length );
+            response.OutputStream.Flush();
         }
 
         /// <summary>

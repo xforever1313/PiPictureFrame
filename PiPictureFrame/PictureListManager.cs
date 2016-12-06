@@ -6,9 +6,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace PiPictureFrame.Core
@@ -23,7 +21,22 @@ namespace PiPictureFrame.Core
         /// <summary>
         /// Fields to look into.
         /// </summary>
-        private DataTable picTable;
+        private List<string> pictures;
+
+        private object picturesLock;
+
+        private string currentPicture;
+
+        private Random random;
+
+        private static readonly List<string> acceptedFileExtensions = new List<string>()
+        {
+            "jpg",
+            "jpeg",
+            "png",
+            "gif",
+            "tiff"
+        };      
 
         // ---------------- Constructor ----------------
 
@@ -32,9 +45,49 @@ namespace PiPictureFrame.Core
         /// </summary>
         public PictureListManager()
         {
-            this.picTable = new DataTable( "Pictures" );
+            this.pictures = new List<string>();
+            this.picturesLock = new object();
+            this.currentPicture = string.Empty;
+            this.random = new Random();
         }
 
+        // ---------------- Properties ----------------
+        
+        /// <summary>
+        /// Path to the photo that should be displayed.
+        /// </summary>
+        public string CurrentPicture
+        {
+            get
+            {
+                lock( this.picturesLock )
+                {
+                    return currentPicture;
+                }
+            }
+
+            private set
+            {
+                lock( this.picturesLock )
+                {
+                    this.currentPicture = value;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Number of photos found.
+        /// </summary>
+        public int FoundPhotos
+        {
+            get
+            {
+                lock( this.picturesLock )
+                {
+                    return this.pictures.Count;
+                }
+            }
+        }
         // ---------------- Functions ----------------
 
         /// <summary>
@@ -42,24 +95,101 @@ namespace PiPictureFrame.Core
         /// </summary>
         public void Clear()
         {
-            this.picTable.Clear();
-        }
-
-        /// <summary>
-        /// Finds all the pictures (recusively) in the given directories.
-        /// Any file 
-        /// </summary>
-        /// <param name="dirs"></param>
-        public void Load( IList<string> dirs )
-        {
-            foreach( string dir in dirs )
+            lock( this.picturesLock )
             {
+                this.pictures.Clear();
             }
         }
 
-        public string NextPicture()
+        /// <summary>
+        /// Finds all the pictures in the given directory,
+        /// Any file that ends in .jpg, .jpeg, .png, .tiff, .gif are
+        /// added.
+        /// 
+        /// Runs in current thread.
+        /// </summary>
+        public void Load( string path )
         {
-            return string.Empty;
+            List<string> newPics = FindPictures( path );
+            lock( this.picturesLock )
+            {
+                this.pictures.Clear();
+                this.pictures = newPics;
+                this.NextPictureNoLock();
+            }
+        }
+
+        /// <summary>
+        /// Finds all the pictures in the given directory,
+        /// Any file that ends in .jpg, .jpeg, .png, .tiff, .gif are
+        /// added.
+        /// 
+        /// Runs in background thread.
+        /// </summary>
+        public async void LoadAsync( string path )
+        {
+            List<string> newPics = await FindPicturesAsync( path );
+            lock( this.picturesLock )
+            {
+                this.pictures.Clear();
+                this.pictures = newPics;
+                this.NextPictureNoLock();
+            }
+        }
+
+        /// <summary>
+        /// Updates this.CurrentPicture to a new picture on the file system.
+        /// </summary>
+        public void NextPicture()
+        {
+            lock( this.picturesLock )
+            {
+                this.NextPictureNoLock();
+            }
+        }
+
+        /// <summary>
+        /// Updates this.CurrentPicture to a new picture on the file system
+        /// without a lock.
+        /// </summary>
+        private void NextPictureNoLock()
+        {
+            do
+            {
+                int index = this.random.Next( 0, this.pictures.Count );
+                this.currentPicture = this.pictures[index];
+            }
+            while( File.Exists( this.currentPicture ) == false );
+        }
+
+        private Task<List<string>> FindPicturesAsync( string path )
+        {
+            return Task.Run( () => this.FindPictures( path ) );
+        }
+
+        private List<string> FindPictures( string path )
+        {
+            List<string> pictures = new List<string>();
+
+            string[] files = Directory.GetFiles(
+                path,
+                "*",
+                SearchOption.AllDirectories
+            );
+
+            foreach( string file in files )
+            {
+                foreach( string ext in acceptedFileExtensions )
+                {
+                    if( file.ToLower().EndsWith( ext ) )
+                    {
+                        pictures.Add( file );
+                        break;
+                    }
+                }
+            }
+
+            return pictures;
         }
     }
 }

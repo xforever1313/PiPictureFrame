@@ -30,6 +30,8 @@ namespace PiPictureFrame.Core
 
         private static readonly string rootFolder;
 
+        private PictureListManager pictureList;
+
         // ---------------- Constructor ----------------
 
         /// <summary>
@@ -51,6 +53,17 @@ namespace PiPictureFrame.Core
         // ---------------- Properties ----------------
 
         public IScreen Screen { get; private set; }
+
+        /// <summary>
+        /// Gets the current picture location.
+        /// </summary>
+        public string CurrentPictureLocation
+        {
+            get
+            {
+                return this.pictureList.CurrentPicture;
+            }
+        }
 
         /// <summary>
         /// The location of the XML user configuration for the pi picture frame.
@@ -93,6 +106,10 @@ namespace PiPictureFrame.Core
             }
 
             this.Screen = new PiTouchScreen( this.loggingAction ); // Only have pi trouch screen implemented now.
+            this.pictureList = new PictureListManager();
+            this.pictureList.Load( this.config.PhotoDirectory );
+
+            this.loggingAction?.Invoke( "Pictures Found: " + this.pictureList.FoundPhotos );
 
             this.server = new HttpServer( this, config.Port );
             this.server.LoggingAction += this.loggingAction;
