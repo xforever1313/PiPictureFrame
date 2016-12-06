@@ -32,6 +32,14 @@ namespace PiPictureFrame.Core
 
         private PictureListManager pictureList;
 
+        private Thread nextPictureThread;
+
+        private AutoResetEvent nextPictureEvent;
+
+        private bool isRunning;
+
+        private object isRunningLock;
+
         // ---------------- Constructor ----------------
 
         /// <summary>
@@ -40,6 +48,10 @@ namespace PiPictureFrame.Core
         public PictureFrame()
         {
             this.isDisposed = false;
+            this.nextPictureThread = new Thread( this.NextPictureThreadRunner );
+            this.nextPictureEvent = new AutoResetEvent( false );
+            this.isRunningLock = new object();
+            this.isRunning = false;
         }
 
         /// <summary>
@@ -62,6 +74,27 @@ namespace PiPictureFrame.Core
             get
             {
                 return this.pictureList.CurrentPicture;
+            }
+        }
+
+        /// <summary>
+        /// Whether or not the frame is running.
+        /// </summary>
+        public bool IsRunning
+        {
+            get
+            {
+                lock( this.isRunningLock )
+                {
+                    return this.isRunning;
+                }
+            }
+            private set
+            {
+                lock( this.isRunningLock )
+                {
+                    this.isRunning = value;
+                }
             }
         }
 
@@ -157,6 +190,8 @@ namespace PiPictureFrame.Core
                 throw new ObjectDisposedException( this.GetType().FullName );
             }
 
+            this.IsRunning = true;
+            this.nextPictureThread.Start();
             this.server.Start();
             HttpServer.QuitReason quitReason = this.server.WaitForQuitEvent();
 
@@ -185,9 +220,19 @@ namespace PiPictureFrame.Core
         /// </summary>
         public void Dispose()
         {
+            this.IsRunning = false;
+            this.nextPictureEvent.Set();
             this.isDisposed = true;
             this.server.LoggingAction -= this.loggingAction;
             this.server.Dispose();
+        }
+
+        /// <summary>
+        /// Toggles the next photo to appear.
+        /// </summary>
+        public void ToggleNextPhoto()
+        {
+            this.nextPictureEvent.Set();
         }
 
         /// <summary>
@@ -216,6 +261,19 @@ namespace PiPictureFrame.Core
 
                 case HttpServer.QuitReason.ShuttingDown:
                     break;
+            }
+        }
+
+        /// <summary>
+        /// Method that handles changing pictures.
+        /// </summary>
+        private void NextPictureThreadRunner()
+        {
+            while( this.IsRunning )
+            {
+                // Use AutoResetEvent so if it times out, or the user triggers it, change the picture.
+                this.nextPictureEvent.WaitOne( (int)this.config.PhotoChangeInterval.TotalMilliseconds );
+                this.pictureList.NextPicture();
             }
         }
     }
