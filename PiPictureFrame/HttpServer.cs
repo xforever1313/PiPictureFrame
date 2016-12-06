@@ -431,7 +431,7 @@ namespace PiPictureFrame.Core
             catch( Exception e )
             {
                 this.LoggingAction?.Invoke( "**********" );
-                this.LoggingAction?.Invoke( "FATAL Exception in HTTP Listener.  Aborint web server, but the picframe will still run: " + e.Message );
+                this.LoggingAction?.Invoke( "FATAL Exception in HTTP Listener.  Aborting web server, but the picframe will still run: " + e.Message );
                 this.LoggingAction?.Invoke( e.StackTrace );
                 this.LoggingAction?.Invoke( "**********" );
             }
@@ -644,8 +644,6 @@ namespace PiPictureFrame.Core
             response.AddHeader( "Content-Encoding", "gzip" );
             string picLocation = this.picFrame.CurrentPictureLocation;
 
-            int length = 0;
-
             byte[] pictureContents;
 
             using( MemoryStream ms = new MemoryStream() )
@@ -657,7 +655,6 @@ namespace PiPictureFrame.Core
                         byte[] buffer = br.ReadBytes( 1028 );
                         while( buffer.Length > 0 )
                         {
-                            length += buffer.Length;
                             gzip.Write( buffer, 0, buffer.Length );
                             buffer = br.ReadBytes( 1028 );
                         }
@@ -668,6 +665,7 @@ namespace PiPictureFrame.Core
             }
 
             response.ContentType = "media/" + Path.GetExtension( picLocation ).TrimStart( '.' );
+            response.ContentLength64 = pictureContents.Length;
             response.OutputStream.Write( pictureContents, 0, pictureContents.Length );
             response.OutputStream.Flush();
         }
