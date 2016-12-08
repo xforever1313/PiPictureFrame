@@ -120,24 +120,6 @@ namespace PiPictureFrame.Core
         }
 
         /// <summary>
-        /// Finds all the pictures in the given directory,
-        /// Any file that ends in .jpg, .jpeg, .png, .tiff, .gif are
-        /// added.
-        /// 
-        /// Runs in background thread.
-        /// </summary>
-        public async void LoadAsync( string path )
-        {
-            List<string> newPics = await FindPicturesAsync( path );
-            lock( this.picturesLock )
-            {
-                this.pictures.Clear();
-                this.pictures = newPics;
-                this.NextPictureNoLock();
-            }
-        }
-
-        /// <summary>
         /// Updates this.CurrentPicture to a new picture on the file system.
         /// </summary>
         public void NextPicture()
@@ -160,11 +142,6 @@ namespace PiPictureFrame.Core
                 this.currentPicture = this.pictures[index];
             }
             while( File.Exists( this.currentPicture ) == false );
-        }
-
-        private Task<List<string>> FindPicturesAsync( string path )
-        {
-            return Task.Run( () => this.FindPictures( path ) );
         }
 
         private List<string> FindPictures( string path )

@@ -5,10 +5,8 @@
 //          http://www.boost.org/LICENSE_1_0.txt)
 
 using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
@@ -33,8 +31,10 @@ namespace PiPictureFrame.Core
         private PictureListManager pictureList;
 
         private Thread nextPictureThread;
-
         private AutoResetEvent nextPictureEvent;
+
+        private Thread pictureRefreshThread;
+        private AutoResetEvent pictureRefreshEvent;
 
         private bool isRunning;
 
@@ -48,8 +48,13 @@ namespace PiPictureFrame.Core
         public PictureFrame()
         {
             this.isDisposed = false;
+
             this.nextPictureThread = new Thread( this.NextPictureThreadRunner );
             this.nextPictureEvent = new AutoResetEvent( false );
+
+            this.pictureRefreshThread = new Thread( this.PictureRefreshRunner );
+            this.pictureRefreshEvent = new AutoResetEvent( false );
+
             this.isRunningLock = new object();
             this.isRunning = false;
         }
@@ -192,6 +197,7 @@ namespace PiPictureFrame.Core
 
             this.IsRunning = true;
             this.nextPictureThread.Start();
+            this.pictureRefreshThread.Start();
             this.server.Start();
             HttpServer.QuitReason quitReason = this.server.WaitForQuitEvent();
 
@@ -222,6 +228,11 @@ namespace PiPictureFrame.Core
         {
             this.IsRunning = false;
             this.nextPictureEvent.Set();
+            this.pictureRefreshEvent.Set();
+
+            this.pictureRefreshThread.Join();
+            this.nextPictureThread.Join();
+
             this.isDisposed = true;
             this.server.LoggingAction -= this.loggingAction;
             this.server.Dispose();
@@ -261,6 +272,14 @@ namespace PiPictureFrame.Core
 
                 case HttpServer.QuitReason.ShuttingDown:
                     break;
+
+                case HttpServer.QuitReason.FatalError:
+                    // If we are a fatal error, we should not quit since we don't want the frame
+                    // exiting.  Wait forever.
+                    this.loggingAction?.Invoke( "A HTTP server fatal error occurred.  Hanging processes until its killed so the frame doesn't stop..." );
+                    ManualResetEvent e = new ManualResetEvent( false );
+                    e.WaitOne();
+                    break;
             }
         }
 
@@ -273,7 +292,40 @@ namespace PiPictureFrame.Core
             {
                 // Use AutoResetEvent so if it times out, or the user triggers it, change the picture.
                 this.nextPictureEvent.WaitOne( (int)this.config.PhotoChangeInterval.TotalMilliseconds );
-                this.pictureList.NextPicture();
+                if( this.IsRunning )
+                {
+                    this.loggingAction?.Invoke( "Changing Picture to " + this.CurrentPictureLocation );
+                    this.pictureList.NextPicture();
+                }
+                else
+                {
+                    this.loggingAction?.Invoke( "Next Picture Thread Shutting Down." );
+                }
+            }
+        }
+
+        /// <summary>
+        /// Method that handles refreshing pictures from disk.
+        /// </summary>
+        private void PictureRefreshRunner()
+        {
+            while( this.IsRunning )
+            {
+                // Use AutoResetEvent so if it times out, or the user triggers it, change the picture.
+                this.pictureRefreshEvent.WaitOne( (int)this.config.PhotoRefreshInterval.TotalMilliseconds );
+                if( this.IsRunning )
+                {
+                    this.loggingAction?.Invoke( "Refreshing pictures..." );
+                    Stopwatch stopWatch = new Stopwatch();
+                    stopWatch.Start();
+                    this.pictureList.Load( this.config.PhotoDirectory );
+                    stopWatch.Stop();
+                    this.loggingAction?.Invoke( "Refreshing pictures...Done (took " + stopWatch.Elapsed.TotalSeconds + " seconds)!" );
+                }
+                else
+                {
+                    this.loggingAction?.Invoke( "Picture Refresh Thread Shutting Down." );
+                }
             }
         }
     }
