@@ -43,11 +43,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="HttpServer.cs" />
+    <Compile Include="IRenderer.cs" />
     <Compile Include="IScreen.cs" />
     <Compile Include="PictureFrame.cs" />
     <Compile Include="PictureFrameConfig.cs" />
     <Compile Include="PictureListManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Renderers\PqivRenderer.cs" />
     <Compile Include="Screens\PiTouchScreen.cs" />
   </ItemGroup>
   <ItemGroup>

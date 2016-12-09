@@ -10,6 +10,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
+using PiPictureFrame.Core.Renderers;
 using PiPictureFrame.Core.Screens;
 
 namespace PiPictureFrame.Core
@@ -40,6 +41,8 @@ namespace PiPictureFrame.Core
 
         private object isRunningLock;
 
+        IRenderer renderer;
+
         // ---------------- Constructor ----------------
 
         /// <summary>
@@ -49,10 +52,7 @@ namespace PiPictureFrame.Core
         {
             this.isDisposed = false;
 
-            this.nextPictureThread = new Thread( this.NextPictureThreadRunner );
             this.nextPictureEvent = new AutoResetEvent( false );
-
-            this.pictureRefreshThread = new Thread( this.PictureRefreshRunner );
             this.pictureRefreshEvent = new AutoResetEvent( false );
 
             this.isRunningLock = new object();
@@ -144,13 +144,16 @@ namespace PiPictureFrame.Core
             }
 
             this.Screen = new PiTouchScreen( this.loggingAction ); // Only have pi trouch screen implemented now.
+
+            this.renderer = new PqivRenderer( loggingAction );
+            this.renderer.Init();
+
             this.pictureList = new PictureListManager();
             this.pictureList.Load( this.config.PhotoDirectory );
 
             this.loggingAction?.Invoke( "Pictures Found: " + this.pictureList.FoundPhotos );
 
-            this.server = new HttpServer( this, config.Port );
-            this.server.LoggingAction += this.loggingAction;
+            this.renderer.ShowPicture( null, this.CurrentPictureLocation );
         }
 
         /// <summary>
@@ -196,9 +199,17 @@ namespace PiPictureFrame.Core
             }
 
             this.IsRunning = true;
+
+            this.nextPictureThread = new Thread( this.NextPictureThreadRunner );
             this.nextPictureThread.Start();
+
+            this.pictureRefreshThread = new Thread( this.PictureRefreshRunner );
             this.pictureRefreshThread.Start();
+
+            this.server = new HttpServer( this, config.Port );
+            this.server.LoggingAction += this.loggingAction;
             this.server.Start();
+
             HttpServer.QuitReason quitReason = this.server.WaitForQuitEvent();
 
             // If disposed was called, quit RIGHT AWAY, the system may be shutting down,
@@ -230,12 +241,17 @@ namespace PiPictureFrame.Core
             this.nextPictureEvent.Set();
             this.pictureRefreshEvent.Set();
 
-            this.pictureRefreshThread.Join();
-            this.nextPictureThread.Join();
+            this.pictureRefreshThread?.Join();
+
+            this.nextPictureThread?.Join();
+
+            if( this.server != null )
+            {
+                this.server.LoggingAction -= this.loggingAction;
+                this.server.Dispose();
+            }
 
             this.isDisposed = true;
-            this.server.LoggingAction -= this.loggingAction;
-            this.server.Dispose();
         }
 
         /// <summary>
@@ -295,7 +311,9 @@ namespace PiPictureFrame.Core
                 if( this.IsRunning )
                 {
                     this.loggingAction?.Invoke( "Changing Picture to " + this.CurrentPictureLocation );
+                    string previousPic = this.pictureList.CurrentPicture;
                     this.pictureList.NextPicture();
+                    this.renderer.ShowPicture( previousPic, this.CurrentPictureLocation );
                 }
                 else
                 {
