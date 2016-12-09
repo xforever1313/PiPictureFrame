@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -115,7 +116,14 @@ namespace PiPictureFrame.Core
             /// <summary>
             /// The user wants the system to exit to the desktop.
             /// </summary>
-            ExitToDesktop
+            ExitToDesktop,
+
+            /// <summary>
+            /// The thread loop aborted fatally.
+            /// Caller should not abort the picture frame.  User will need to kill the task
+            /// to kill the frame.
+            /// </summary>
+            FatalError
         }
 
         // ---------------- Events ----------------
@@ -299,126 +307,171 @@ namespace PiPictureFrame.Core
 
         private void HandleRequest()
         {
-            while( this.IsListening )
+            // There are bunch of exceptions that can happen here.
+            // 1.  Client closes connection.  This will cause our response's stream to close.
+            //     We may see errors such as "The specified network name is no longer available"
+            //     or "The I/O operation has been aborted because of either a thread exit or an application request".
+            //     NEITHER or these should cause the program to crash.  Simply grab the next connection and move on.
+            // 2.  ObjectDisposeExceptions can happen if the above happens as well.  We'll handle those when needed.
+
+            try
             {
-                HttpListenerContext context = null;
-                try
+                while( this.IsListening )
                 {
-                    context = listener.GetContext();
-                }
-                catch( HttpListenerException err )
-                {
-                    // Error code 995 means GetContext got aborted (E.g. when shutting down).
-                    // If that's the case, just start over.  The while loop will break out and
-                    // the thread will exit cleanly.
-                    if( err.ErrorCode == 995 )
-                    {
-                        this.LoggingAction?.Invoke( "Server got terminated, shutting down..." );
-                        continue;
-                    }
-                    else
-                    {
-                        this.LoggingAction?.Invoke( "FATAL ERROR (" + err.ErrorCode + "): " + err.ToString() );
-                        throw;
-                    }
-                }
-
-                HttpListenerRequest request = context.Request;
-                HttpListenerResponse response = context.Response;
-
-                string responseString = string.Empty;
-                try
-                {
-                    // Construct Response.
-                    // Taken from https://msdn.microsoft.com/en-us/library/system.net.httplistener.begingetcontext%28v=vs.110%29.aspx
-                    string url = request.RawUrl.ToLower();
-                    if( ( url == "/" ) || ( url == "/index.html" ) )
-                    {
-                        responseString = GetIndexHtml();
-                    }
-                    else if( url == "/settings.html" )
-                    {
-                        responseString = GetSettingsHtml( string.Empty );
-                    }
-                    else if( url == "/turnoff.html" )
-                    {
-                        responseString = GetTurnOffHtml( string.Empty );
-                    }
-                    else if( url == "/about.html" )
-                    {
-                    }
-                    else if( url == "/sleep.html" )
-                    {
-                        responseString = HandleSleepRequest( request.HttpMethod );
-                    }
-                    else if( url == "/linux.html" )
-                    {
-                        responseString = HandleExitToDesktopRequest( request.HttpMethod );
-                    }
-                    else if( url == "/restart.html" )
-                    {
-                        responseString = HandleRestartSystemRequest( request.HttpMethod );
-                    }
-                    else if( url == "/shutdown.html" )
-                    {
-                        responseString = HandleShutdownSystemRequest( request.HttpMethod );
-                    }
-                    else if( url.EndsWith( ".css" ) || url.EndsWith( ".js" ) )
-                    {
-                        responseString = GetJsOrCssFile( url );
-                        if( string.IsNullOrEmpty( responseString ) )
-                        {
-                            responseString = Get404Html();
-                            response.StatusCode = Convert.ToInt32( HttpStatusCode.NotFound );
-                        }
-                    }
-                    else
-                    {
-                        responseString = Get404Html();
-                        response.StatusCode = Convert.ToInt32( HttpStatusCode.NotFound );
-                    }
-                }
-                catch( Exception e )
-                {
-                    responseString = GetErrorHtml( e );
-                    response.StatusCode = Convert.ToInt32( HttpStatusCode.InternalServerError );
-
-                    this.LoggingAction?.Invoke( "**********" );
-                    this.LoggingAction?.Invoke( "Caught Exception when determining response: " + e.Message );
-                    this.LoggingAction?.Invoke( e.StackTrace );
-                    this.LoggingAction?.Invoke( "**********" );
-                }
-                finally
-                {
+                    HttpListenerContext context = null;
                     try
                     {
-                        // Only send response if our string is not empty
-                        // (Possible for an image, ExportToXml or ExportJson got called and didn't
-                        // add the response string).
-                        if( responseString.Length > 0 )
+                        context = listener.GetContext();
+                    }
+                    catch( HttpListenerException err )
+                    {
+                        // Error code 995 means GetContext got aborted (E.g. when shutting down).
+                        // If that's the case, just start over.  The while loop will break out and
+                        // the thread will exit cleanly.
+                        if( err.ErrorCode == 995 )
                         {
-                            byte[] buffer = Encoding.UTF8.GetBytes( responseString );
-                            response.ContentLength64 = buffer.Length;
-                            response.OutputStream.Write( buffer, 0, buffer.Length );
+                            this.LoggingAction?.Invoke( "Server got terminated, shutting down..." );
+                            continue;
+                        }
+                        else
+                        {
+                            this.LoggingAction?.Invoke( "FATAL ERROR (" + err.ErrorCode + "): " + err.ToString() );
+                            throw;
                         }
                     }
-                    catch( Exception e )
+
+                    HttpListenerRequest request = context.Request;
+                    HttpListenerResponse response = context.Response;
+                    try
+                    {
+                        string responseString = string.Empty;
+                        try
+                        {
+                            responseString = HandleRequest( request, response );
+                        }
+                        catch( Exception e )
+                        {
+                            responseString = GetErrorHtml( e );
+                            response.StatusCode = Convert.ToInt32( HttpStatusCode.InternalServerError );
+
+                            this.LoggingAction?.Invoke( "**********" );
+                            this.LoggingAction?.Invoke( "Caught Exception when determining response: " + e.Message );
+                            this.LoggingAction?.Invoke( e.StackTrace );
+                            this.LoggingAction?.Invoke( "**********" );
+                        }
+                        finally
+                        {
+                            try
+                            {
+                                // Only send response if our string is not empty
+                                // (Possible for an image, ExportToXml or ExportJson got called and didn't
+                                // add the response string).
+                                if( responseString.Length > 0 )
+                                {
+                                    byte[] buffer = Encoding.UTF8.GetBytes( responseString );
+                                    response.ContentLength64 = buffer.Length;
+                                    response.OutputStream.Write( buffer, 0, buffer.Length );
+                                }
+                            }
+                            catch( Exception e )
+                            {
+                                this.LoggingAction?.Invoke( "**********" );
+                                this.LoggingAction?.Invoke( "Caught Exception when writing response: " + e.Message );
+                                this.LoggingAction?.Invoke( e.StackTrace );
+                                this.LoggingAction?.Invoke( "**********" );
+                            }
+                            response.OutputStream.Close();
+                        }
+
+                        this.LoggingAction?.Invoke(
+                            request.HttpMethod + " from: " + request.UserHostName + " " + request.UserHostAddress + " " + request.RawUrl + " (" + response.StatusCode + ")"
+                        );
+                    } // End request/response try{}
+                    catch( ObjectDisposedException err )
                     {
                         this.LoggingAction?.Invoke( "**********" );
-                        this.LoggingAction?.Invoke( "Caught Exception when writing response: " + e.Message );
-                        this.LoggingAction?.Invoke( e.StackTrace );
+                        this.LoggingAction?.Invoke( "Caught ObjectDisposedException when handling resposne: " + err.Message );
+                        this.LoggingAction?.Invoke( "This can happen for several expected reasons.  We're okay!" );
+                        this.LoggingAction?.Invoke( err.StackTrace );
                         this.LoggingAction?.Invoke( "**********" );
                     }
-                    response.OutputStream.Close();
-                }
-
-                this.LoggingAction?.Invoke(
-                    request.HttpMethod + " from: " + request.UserHostName + " " + request.UserHostAddress + " " + request.RawUrl + " (" + response.StatusCode + ")"
-                );
+                } // End while IsListening loop.
+            }
+            catch( Exception e )
+            {
+                this.LoggingAction?.Invoke( "**********" );
+                this.LoggingAction?.Invoke( "FATAL Exception in HTTP Listener.  Aborting web server, but the picframe will still run: " + e.Message );
+                this.LoggingAction?.Invoke( e.StackTrace );
+                this.LoggingAction?.Invoke( "**********" );
+                this.quitReason = QuitReason.FatalError;
             }
 
             // Our thread is exiting, notify all threads waiting on it.
             this.quitEvent.Set();
+        }
+
+        private string HandleRequest( HttpListenerRequest request, HttpListenerResponse response )
+        {
+            string responseString = string.Empty;
+
+            // Construct Response.
+            // Taken from https://msdn.microsoft.com/en-us/library/system.net.httplistener.begingetcontext%28v=vs.110%29.aspx
+            string url = request.RawUrl.ToLower();
+            if( ( url == "/" ) || ( url == "/index.html" ) )
+            {
+                responseString = GetIndexHtml();
+            }
+            else if( url == "/settings.html" )
+            {
+                responseString = GetSettingsHtml( string.Empty );
+            }
+            else if( url == "/turnoff.html" )
+            {
+                responseString = GetTurnOffHtml( string.Empty );
+            }
+            else if( url == "/about.html" )
+            {
+            }
+            else if( url == "/sleep.html" )
+            {
+                responseString = HandleSleepRequest( request.HttpMethod );
+            }
+            else if( url == "/linux.html" )
+            {
+                responseString = HandleExitToDesktopRequest( request.HttpMethod );
+            }
+            else if( url == "/restart.html" )
+            {
+                responseString = HandleRestartSystemRequest( request.HttpMethod );
+            }
+            else if( url == "/shutdown.html" )
+            {
+                responseString = HandleShutdownSystemRequest( request.HttpMethod );
+            }
+            else if( url == "/current.jpg" )
+            {
+                this.HandleGetCurrentPictureRequest( response );
+            }
+            else if( url == "/changepicture.html" )
+            {
+                responseString = this.HandleChangePictureRequest( request.HttpMethod );
+            }
+            else if( url.EndsWith( ".css" ) || url.EndsWith( ".js" ) )
+            {
+                responseString = GetJsOrCssFile( url );
+                if( string.IsNullOrEmpty( responseString ) )
+                {
+                    responseString = Get404Html();
+                    response.StatusCode = Convert.ToInt32( HttpStatusCode.NotFound );
+                }
+            }
+            else
+            {
+                responseString = Get404Html();
+                response.StatusCode = Convert.ToInt32( HttpStatusCode.NotFound );
+            }
+
+            return responseString;
         }
 
         // ---- HTML Functions ----
@@ -611,6 +664,62 @@ namespace PiPictureFrame.Core
             else
             {
                 response = GetTurnOffHtml( "Must POST request to shutdown system." );
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Handles a request for gettings the current picture.
+        /// </summary>
+        /// <param name="response">Response being used.</param>
+        private void HandleGetCurrentPictureRequest( HttpListenerResponse response )
+        {
+            response.AddHeader( "Content-Encoding", "gzip" );
+            string picLocation = this.picFrame.CurrentPictureLocation;
+
+            byte[] pictureContents;
+
+            using( MemoryStream ms = new MemoryStream() )
+            {
+                using( GZipStream gzip = new GZipStream( ms, CompressionMode.Compress, true ) )
+                {
+                    using( BinaryReader br = new BinaryReader( File.Open( picLocation, FileMode.Open, FileAccess.Read ) ) )
+                    {
+                        byte[] buffer = br.ReadBytes( 1028 );
+                        while( buffer.Length > 0 )
+                        {
+                            gzip.Write( buffer, 0, buffer.Length );
+                            buffer = br.ReadBytes( 1028 );
+                        }
+                    }
+                }
+
+                pictureContents = ms.ToArray();
+            }
+
+            response.ContentType = "media/" + Path.GetExtension( picLocation ).TrimStart( '.' );
+            response.ContentLength64 = pictureContents.Length;
+            response.OutputStream.Write( pictureContents, 0, pictureContents.Length );
+            response.OutputStream.Flush();
+        }
+
+        /// <summary>
+        /// Handle the request when a user asks to change the photo.
+        /// </summary>
+        /// <param name="method">HTTP method.</param>
+        /// <returns>HTML to return to the user.</returns>
+        private string HandleChangePictureRequest( string method )
+        {
+            string response;
+            if( method == "POST" )
+            {
+                this.picFrame.ToggleNextPhoto();
+                response = GetIndexHtml();
+            }
+            else
+            {
+                response = GetIndexHtml();
             }
 
             return response;

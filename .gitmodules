@@ -1,3 +1,6 @@
 [submodule "SethCS"]
 	path = SethCS
 	url = https://github.com/xforever1313/sethcs.git
+[submodule "pqiv"]
+	path = pqiv
+	url = https://github.com/phillipberndt/pqiv.git
