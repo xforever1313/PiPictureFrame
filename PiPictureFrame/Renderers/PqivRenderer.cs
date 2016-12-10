@@ -209,12 +209,21 @@ namespace PiPictureFrame.Core.Renderers
         {
             // Per MSDN, when the process is exiting, a null line is sent.
             // we need to account for that.
+            //
+            // Per this stack overflow page: http://stackoverflow.com/questions/11631443/capturing-process-output-via-outputdatareceived-event
+            // the child process needs to flush stdout in order for this to read it, otherwise
+            // it will never get stdout until it exits.
+            //
+            // In pqiv.c, line 2589 needs fflush(stdout) in order for this to work properly.
+            // Easiest way to find that is to serach for "CURRENT_FILE_NAME=" in the file, and add fflush(stdout); after the printf.
             if( ( e != null ) &&  ( string.IsNullOrEmpty( e.Data ) == false ) )
             {
                 string line = e.Data;
+                
                 // First, print what we got.
                 this.loggingAction?.Invoke( "PQIV: " + line );
 
+                // Then update current.jpg.
                 Match match = currentPictureRegex.Match( line );
                 if( match.Success )
                 {
