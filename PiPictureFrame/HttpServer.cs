@@ -456,6 +456,10 @@ namespace PiPictureFrame.Core
             {
                 responseString = this.HandleChangePictureRequest( request.HttpMethod );
             }
+            else if( url == "/full.html" )
+            {
+                responseString = ReadFile( Path.Combine( "html", "full.html" ) );
+            }
             else if( url.EndsWith( ".css" ) || url.EndsWith( ".js" ) )
             {
                 responseString = GetJsOrCssFile( url );
