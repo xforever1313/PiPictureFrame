@@ -13,19 +13,24 @@ namespace PiPictureFrame.Core
     /// </summary>
     public interface IRenderer : IDisposable
     {
+        // ---------------- Properties ----------------
+
+        /// <summary>
+        /// Returns the current picture path.
+        /// </summary>
+        string CurrentPicturePath { get; }
+
+        // ---------------- Functions ----------------
+
         /// <summary>
         /// Inits the renderer.
         /// </summary>
-        void Init();
+        /// <param name="pictureDirectory">Where the picture directory is.</param>
+        void Init( string pictureDirectory );
 
         /// <summary>
-        /// Shows the picture to the screen.
+        /// Tells the renderer to go to the next picture.
         /// </summary>
-        /// <param name="lastPicturePath">
-        /// The path of the previous picture (in case you need to clean things up).
-        /// This can be null if there was none.
-        /// </param>
-        /// <param name="currentPicturePath">The path of the picture to show.</param>
-        void ShowPicture( string lastPicturePath, string currentPicturePath );
+        void GoToNextPicture();
     }
 }

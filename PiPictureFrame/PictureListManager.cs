@@ -7,12 +7,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading.Tasks;
 
 namespace PiPictureFrame.Core
 {
     /// <summary>
     /// Manages the pictures to find.
+    /// 
+    /// Currently not used, but is here in case a different renderer shows up and it needs it.
     /// </summary>
     public class PictureListManager
     {

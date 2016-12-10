@@ -6,6 +6,9 @@
 
 using System;
 using System.Diagnostics;
+using System.IO;
+using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace PiPictureFrame.Core.Renderers
 {
@@ -19,7 +22,7 @@ namespace PiPictureFrame.Core.Renderers
     /// </summary>
     public class PqivRenderer : IRenderer
     {
-        // -------- Fields --------
+        // ---------------- Fields ----------------
 
         private readonly bool isLinux;
 
@@ -29,7 +32,16 @@ namespace PiPictureFrame.Core.Renderers
 
         private Process pqivProcess;
 
-        // -------- Constructor --------
+        private string currentPicture;
+        private readonly object currentPictureLock;
+        private static readonly Regex currentPictureRegex = new Regex( @"CURRENT_FILE_NAME=""(?<fileName>.+)""", RegexOptions.Compiled );
+
+        private Thread stdoutThread;
+
+        private bool isRunning;
+        private object isRunningLock;
+
+        // ---------------- Constructor ----------------
 
         /// <summary>
         /// Constructor.
@@ -38,18 +50,125 @@ namespace PiPictureFrame.Core.Renderers
         {
             this.isLinux = ( Environment.OSVersion.Platform == PlatformID.Unix );
             this.loggingAction = loggingAction;
+
             this.pqivProcess = null;
+
+            this.currentPictureLock = new object();
+            this.currentPicture = string.Empty;
+
+            this.stdoutThread = new Thread( this.StdoutProcessor );
+
+            this.isRunning = false;
+            this.isRunningLock = new object();
+        }
+
+        // ---------------- Properties ----------------
+
+        /// <summary>
+        /// Returns the current picture path, which for pqiv is always
+        /// ./.pqiv-select.
+        /// </summary>
+        public string CurrentPicturePath
+        {
+            get
+            {
+                lock( this.currentPictureLock )
+                {
+                    return this.currentPicture;
+                }
+            }
+            private set
+            {
+                lock( this.currentPictureLock )
+                {
+                    this.currentPicture = value;
+                }
+            }
         }
 
         /// <summary>
-        /// Inits the fbi renderer...
-        /// It just makes sure it exists.
+        /// Whether or not the stdout process is running.
         /// </summary>
-        public void Init()
+        private bool IsRunning
+        {
+            get
+            {
+                lock( this.isRunningLock )
+                {
+                    return this.isRunning;
+                }
+            }
+            set
+            {
+                lock( this.isRunningLock )
+                {
+                    this.isRunning = value;
+                }
+            }
+        }
+
+        // ---------------- Functions ----------------
+
+        /// <summary>
+        /// Inits and starts pqiv.
+        /// </summary>
+        public void Init( string pictureDirectory )
         {
             if( this.isLinux )
             {
                 this.FindExecutable( pqivExeLocation );
+
+                ProcessStartInfo info = new ProcessStartInfo();
+
+                // Arguments (Per man page):
+                // -f, --fullscreen
+                //       Start in fullscreen mode. Fullscreen can be toggled by pressing f at runtime by default.
+                // -i, --hide-info-box
+                //        Initially hide the info box. Whether the box is visible can be toggled by pressing i at runtime by default.
+                // -F, --fade
+                //        Fade between images. See also --fade-duration.
+                // --end-of-files-action=ACTION
+                //        If  all  files  have  been  viewed  and  the next image is to be viewed, either by the user's request or because a
+                //        slideshow is active, pqiv by default cycles and restarts at the first image. This parameter can be used to  modify
+                //        this behaviour. Valid choices for ACTION are:
+                // 
+                //        quit                Quit pqiv,
+                // 
+                //        wait                Wait  until  a  new  image  becomes  available.  This  only  makes  sense  if  used  with e.g.
+                //                            --watch-directories,
+                // 
+                //        wrap (default)      Restart at the first image. In shuffle mode, choose a new random order,
+                // 
+                //        wrap-no-reshuffle   As wrap, but do not reshuffle in random mode.
+                // --shuffle
+                //        Display  files in random order. This option conflicts with --sort. Files are reshuffled after all images have been
+                //        shown, but within one cycle, the order is stable. The reshuffling can be disabled using --end-of-files-action.  At
+                //        runtime, you can use Control + R by default to toggle shuffle mode; this retains the shuffled order, i.e., you can
+                //        disable shuffle mode, view a few images, then enable it again and continue after the last image you viewed earlier
+                // --watch-directories
+                //        Watch all directories supplied as parameters to pqiv for new files and add them as they appear.  In  --sort  mode,
+                //        files  are  sorted  into  the  correct  position,  else,  they  are  appended  to  the  end of the list.  See also
+                //        --watch-files, which handles how changes to the image that is currently being viewed are handled.
+                //
+                // --actions-from-stdin
+                //        Like --action, but read actions from the standard input. See the ACTIONS section below for  syntax  and  available
+                //        commands. This option conflicts with --additional-from-stdin.
+                //        in shuffle mode.
+
+                info.Arguments = "--fullscreen --hide-info-box --fade --scale-images-up --end-of-files-action=wrap --shuffle --watch-directories --actions-from-stdin \"" + pictureDirectory + "\"";
+                info.RedirectStandardInput = true;
+                info.RedirectStandardOutput = true;
+                info.UseShellExecute = false;
+                info.FileName = pqivExeLocation;
+
+                this.pqivProcess = new Process();
+                this.pqivProcess.StartInfo = info;
+                this.pqivProcess.Start();
+                this.IsRunning = true;
+                this.stdoutThread.Start();
+
+                // So we can see what the current picture is.
+                this.pqivProcess.StandardInput.WriteLine( "set_status_output(1)" );
             }
             else
             {
@@ -63,45 +182,27 @@ namespace PiPictureFrame.Core.Renderers
         /// </summary>
         public void Dispose()
         {
+            this.IsRunning = false;
             this.pqivProcess?.StandardInput.WriteLine( "quit()" );
             this.pqivProcess?.WaitForExit();
+            this.stdoutThread.Join();
         }
 
         /// <summary>
         /// Adds the picture to PQIV.
         /// </summary>
-        /// <param name="lastPicturePath">The path of the previous picture (in case you need to clean things up).</param>
-        /// <param name="currentPicturePath">The path of the picture to show.</param>
-        public void ShowPicture( string lastPicturePath, string currentPicturePath )
+        public void GoToNextPicture()
         {
             if( this.isLinux )
             {
                 if( pqivProcess == null )
                 {
-                    ProcessStartInfo info = new ProcessStartInfo();
-                    info.Arguments = "--fullscreen --hide-info-box --fade --scale-images-up --end-of-files-action=wait --actions-from-stdin \"" + currentPicturePath + "\"";
-                    info.RedirectStandardInput = true;
-                    info.UseShellExecute = false;
-                    info.FileName = pqivExeLocation;
-
-                    this.pqivProcess = new Process();
-                    this.pqivProcess.StartInfo = info;
-                    this.pqivProcess.Start();
+                    throw new InvalidOperationException( nameof( this.Init ) + "() must be called first!" );
                 }
                 else
                 {
-                    // Send commands to pqiv.
-
-                    // First, add new picture to pqiv:
-                    currentPicturePath.Replace( ")", @"\)" ); // Per pqiv's man page.  All ) must be escaped.
-                    this.pqivProcess.StandardInput.WriteLine( "add_file(" + currentPicturePath + ")" );
-
-                    // Next, go to the next picture.
+                    // Tell pqiv to go to the next directory.
                     this.pqivProcess.StandardInput.WriteLine( "goto_file_relative(1)" );
-
-                    // Lastly, remove the previous photo.
-                    lastPicturePath.Replace( ")", @"\)" );
-                    this.pqivProcess.StandardInput.WriteLine( "remove_file_byname(" + lastPicturePath + ")" );
                 }
             }
             else
@@ -128,6 +229,33 @@ namespace PiPictureFrame.Core.Renderers
                 {
                     throw new ApplicationException( "Trying to execute '" + path + " --help' failed." );
                 }
+            }
+        }
+
+        private void StdoutProcessor()
+        {
+            try
+            {
+                while( this.IsRunning )
+                {
+                    string line = this.pqivProcess.StandardOutput.ReadLine();
+                    // First, print what we got.
+                    this.loggingAction?.Invoke( "PQIV: " + line );
+
+                    Match match = currentPictureRegex.Match( line );
+                    if( match.Success )
+                    {
+                        this.CurrentPicturePath = match.Groups["fileName"].Value;
+                    }
+                }
+            }
+            catch( Exception e )
+            {
+                this.loggingAction?.Invoke( "Caught exception in pqiv stdout processor:" + Environment.NewLine + e.ToString() );
+            }
+            finally
+            {
+                this.loggingAction?.Invoke( "StdoutProcessing thread exiting." );
             }
         }
     }

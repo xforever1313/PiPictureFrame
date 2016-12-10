@@ -29,19 +29,14 @@ namespace PiPictureFrame.Core
 
         private static readonly string rootFolder;
 
-        private PictureListManager pictureList;
-
         private Thread nextPictureThread;
         private AutoResetEvent nextPictureEvent;
-
-        private Thread pictureRefreshThread;
-        private AutoResetEvent pictureRefreshEvent;
 
         private bool isRunning;
 
         private object isRunningLock;
 
-        IRenderer renderer;
+        private IRenderer renderer;
 
         // ---------------- Constructor ----------------
 
@@ -53,7 +48,6 @@ namespace PiPictureFrame.Core
             this.isDisposed = false;
 
             this.nextPictureEvent = new AutoResetEvent( false );
-            this.pictureRefreshEvent = new AutoResetEvent( false );
 
             this.isRunningLock = new object();
             this.isRunning = false;
@@ -78,7 +72,7 @@ namespace PiPictureFrame.Core
         {
             get
             {
-                return this.pictureList.CurrentPicture;
+                return this.renderer.CurrentPicturePath;
             }
         }
 
@@ -145,15 +139,8 @@ namespace PiPictureFrame.Core
 
             this.Screen = new PiTouchScreen( this.loggingAction ); // Only have pi trouch screen implemented now.
 
-            this.renderer = new PqivRenderer( loggingAction );
-            this.renderer.Init();
-
-            this.pictureList = new PictureListManager();
-            this.pictureList.Load( this.config.PhotoDirectory );
-
-            this.loggingAction?.Invoke( "Pictures Found: " + this.pictureList.FoundPhotos );
-
-            this.renderer.ShowPicture( null, this.CurrentPictureLocation );
+            this.renderer = new PqivRenderer( this.loggingAction );
+            this.renderer.Init( this.config.PhotoDirectory );
         }
 
         /// <summary>
@@ -203,9 +190,6 @@ namespace PiPictureFrame.Core
             this.nextPictureThread = new Thread( this.NextPictureThreadRunner );
             this.nextPictureThread.Start();
 
-            this.pictureRefreshThread = new Thread( this.PictureRefreshRunner );
-            this.pictureRefreshThread.Start();
-
             this.server = new HttpServer( this, config.Port );
             this.server.LoggingAction += this.loggingAction;
             this.server.Start();
@@ -239,16 +223,20 @@ namespace PiPictureFrame.Core
         {
             this.IsRunning = false;
             this.nextPictureEvent.Set();
-            this.pictureRefreshEvent.Set();
-
-            this.pictureRefreshThread?.Join();
 
             this.nextPictureThread?.Join();
 
-            if( this.server != null )
+            try
             {
-                this.server.LoggingAction -= this.loggingAction;
-                this.server.Dispose();
+                if( this.server != null )
+                {
+                    this.server.LoggingAction -= this.loggingAction;
+                    this.server.Dispose();
+                }
+            }
+            finally
+            {
+                this.renderer?.Dispose();
             }
 
             this.isDisposed = true;
@@ -310,39 +298,12 @@ namespace PiPictureFrame.Core
                 this.nextPictureEvent.WaitOne( (int)this.config.PhotoChangeInterval.TotalMilliseconds );
                 if( this.IsRunning )
                 {
-                    this.loggingAction?.Invoke( "Changing Picture to " + this.CurrentPictureLocation );
-                    string previousPic = this.pictureList.CurrentPicture;
-                    this.pictureList.NextPicture();
-                    this.renderer.ShowPicture( previousPic, this.CurrentPictureLocation );
+                    this.loggingAction?.Invoke( "Changing Picture..." );
+                    this.renderer.GoToNextPicture();
                 }
                 else
                 {
                     this.loggingAction?.Invoke( "Next Picture Thread Shutting Down." );
-                }
-            }
-        }
-
-        /// <summary>
-        /// Method that handles refreshing pictures from disk.
-        /// </summary>
-        private void PictureRefreshRunner()
-        {
-            while( this.IsRunning )
-            {
-                // Use AutoResetEvent so if it times out, or the user triggers it, change the picture.
-                this.pictureRefreshEvent.WaitOne( (int)this.config.PhotoRefreshInterval.TotalMilliseconds );
-                if( this.IsRunning )
-                {
-                    this.loggingAction?.Invoke( "Refreshing pictures..." );
-                    Stopwatch stopWatch = new Stopwatch();
-                    stopWatch.Start();
-                    this.pictureList.Load( this.config.PhotoDirectory );
-                    stopWatch.Stop();
-                    this.loggingAction?.Invoke( "Refreshing pictures...Done (took " + stopWatch.Elapsed.TotalSeconds + " seconds)!" );
-                }
-                else
-                {
-                    this.loggingAction?.Invoke( "Picture Refresh Thread Shutting Down." );
                 }
             }
         }
