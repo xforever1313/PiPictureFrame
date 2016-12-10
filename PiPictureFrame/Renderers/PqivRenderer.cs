@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PiPictureFrame.Core.Renderers
 {
@@ -36,11 +37,6 @@ namespace PiPictureFrame.Core.Renderers
         private readonly object currentPictureLock;
         private static readonly Regex currentPictureRegex = new Regex( @"CURRENT_FILE_NAME=""(?<fileName>.+)""", RegexOptions.Compiled );
 
-        private Thread stdoutThread;
-
-        private bool isRunning;
-        private object isRunningLock;
-
         // ---------------- Constructor ----------------
 
         /// <summary>
@@ -55,11 +51,6 @@ namespace PiPictureFrame.Core.Renderers
 
             this.currentPictureLock = new object();
             this.currentPicture = string.Empty;
-
-            this.stdoutThread = new Thread( this.StdoutProcessor );
-
-            this.isRunning = false;
-            this.isRunningLock = new object();
         }
 
         // ---------------- Properties ----------------
@@ -82,27 +73,6 @@ namespace PiPictureFrame.Core.Renderers
                 lock( this.currentPictureLock )
                 {
                     this.currentPicture = value;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Whether or not the stdout process is running.
-        /// </summary>
-        private bool IsRunning
-        {
-            get
-            {
-                lock( this.isRunningLock )
-                {
-                    return this.isRunning;
-                }
-            }
-            set
-            {
-                lock( this.isRunningLock )
-                {
-                    this.isRunning = value;
                 }
             }
         }
@@ -159,13 +129,14 @@ namespace PiPictureFrame.Core.Renderers
                 info.RedirectStandardInput = true;
                 info.RedirectStandardOutput = true;
                 info.UseShellExecute = false;
+                info.CreateNoWindow = true;
                 info.FileName = pqivExeLocation;
 
                 this.pqivProcess = new Process();
                 this.pqivProcess.StartInfo = info;
+                this.pqivProcess.OutputDataReceived += this.StdoutProcessor;
                 this.pqivProcess.Start();
-                this.IsRunning = true;
-                this.stdoutThread.Start();
+                this.pqivProcess.BeginOutputReadLine();
 
                 // So we can see what the current picture is.
                 this.pqivProcess.StandardInput.WriteLine( "set_status_output(1)" );
@@ -182,10 +153,10 @@ namespace PiPictureFrame.Core.Renderers
         /// </summary>
         public void Dispose()
         {
-            this.IsRunning = false;
+            this.loggingAction?.Invoke( "Quitting Pqiv..." );
             this.pqivProcess?.StandardInput.WriteLine( "quit()" );
             this.pqivProcess?.WaitForExit();
-            this.stdoutThread.Join();
+            this.loggingAction?.Invoke( "Quitting Pqiv...Done!" );
         }
 
         /// <summary>
@@ -214,6 +185,8 @@ namespace PiPictureFrame.Core.Renderers
         private void FindExecutable( string path )
         {
             ProcessStartInfo info = new ProcessStartInfo( path, "--help" );
+            info.RedirectStandardOutput = true;
+            info.UseShellExecute = false;
 
             using( Process process = new Process() )
             {
@@ -232,30 +205,21 @@ namespace PiPictureFrame.Core.Renderers
             }
         }
 
-        private void StdoutProcessor()
+        private void StdoutProcessor( object sender, DataReceivedEventArgs e )
         {
-            try
+            // Per MSDN, when the process is exiting, a null line is sent.
+            // we need to account for that.
+            if( ( e != null ) &&  ( string.IsNullOrEmpty( e.Data ) == false ) )
             {
-                while( this.IsRunning )
-                {
-                    string line = this.pqivProcess.StandardOutput.ReadLine();
-                    // First, print what we got.
-                    this.loggingAction?.Invoke( "PQIV: " + line );
+                string line = e.Data;
+                // First, print what we got.
+                this.loggingAction?.Invoke( "PQIV: " + line );
 
-                    Match match = currentPictureRegex.Match( line );
-                    if( match.Success )
-                    {
-                        this.CurrentPicturePath = match.Groups["fileName"].Value;
-                    }
+                Match match = currentPictureRegex.Match( line );
+                if( match.Success )
+                {
+                    this.CurrentPicturePath = match.Groups["fileName"].Value;
                 }
-            }
-            catch( Exception e )
-            {
-                this.loggingAction?.Invoke( "Caught exception in pqiv stdout processor:" + Environment.NewLine + e.ToString() );
-            }
-            finally
-            {
-                this.loggingAction?.Invoke( "StdoutProcessing thread exiting." );
             }
         }
     }
