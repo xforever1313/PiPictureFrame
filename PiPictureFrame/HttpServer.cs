@@ -603,6 +603,11 @@ namespace PiPictureFrame.Core
                 {
                     continue;
                 }
+                // Skip any temp file systems or anything like that.
+                else if( drive.TotalSize <= 0 )
+                {
+                    continue;
+                }
 
                 string driveVarName = Regex.Replace( drive.Name, @"[^\w]+", "_" );
 
