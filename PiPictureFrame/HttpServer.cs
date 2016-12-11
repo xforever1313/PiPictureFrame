@@ -627,11 +627,11 @@ namespace PiPictureFrame.Core
                 javascriptBuilder.AppendLine( "type: 'doughnut', data: data_" + driveVarName + @", animation: { animateScale: true }});" );
                 javascriptBuilder.AppendLine();
 
-                htmlBuilder.AppendLine( "<div>" );
+                htmlBuilder.AppendLine( @"<div>" );
                 htmlBuilder.AppendLine( "<h3>" + drive.Name + "</h3>" );
-                htmlBuilder.AppendLine( @"<canvas id=""" + driveVarName + @""" width=""100"" height=""100""></canvas>" );
+                htmlBuilder.AppendLine( @"<canvas id=""" + driveVarName + @""" width=""100"" height=""100"" style=""max-width:500px;max-height:500px;""></canvas>" );
                 htmlBuilder.AppendFormat( "<p>Used {0:0.00} of {1:0.00} GB.  {2:0.00} GB remain.</p>{3}", usedGb, driveSive, freeGb, Environment.NewLine );
-                htmlBuilder.AppendLine( "</div>" );
+                htmlBuilder.AppendLine( "</div><br/>" );
             }
 
             html = html.Replace( "{%chartJs%}", javascriptBuilder.ToString() );
