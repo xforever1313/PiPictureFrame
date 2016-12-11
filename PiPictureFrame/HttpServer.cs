@@ -387,10 +387,10 @@ namespace PiPictureFrame.Core
                             request.HttpMethod + " from: " + request.UserHostName + " " + request.UserHostAddress + " " + request.RawUrl + " (" + response.StatusCode + ")"
                         );
                     } // End request/response try{}
-                    catch( ObjectDisposedException err )
+                    catch( Exception err )
                     {
                         this.LoggingAction?.Invoke( "**********" );
-                        this.LoggingAction?.Invoke( "Caught ObjectDisposedException when handling resposne: " + err.Message );
+                        this.LoggingAction?.Invoke( "Caught exception when handling resposne: " + err.Message );
                         this.LoggingAction?.Invoke( "This can happen for several expected reasons.  We're okay!" );
                         this.LoggingAction?.Invoke( err.StackTrace );
                         this.LoggingAction?.Invoke( "**********" );
@@ -428,6 +428,10 @@ namespace PiPictureFrame.Core
             else if( url == "/turnoff.html" )
             {
                 responseString = GetTurnOffHtml( string.Empty );
+            }
+            else if (url == "/space.html")
+            {
+                responseString = GetSpaceHtml();
             }
             else if( url == "/about.html" )
             {
@@ -576,6 +580,62 @@ namespace PiPictureFrame.Core
 
             string onOrOff = this.picFrame.Screen.IsOn ? "Off" : "On";
             html = html.Replace( "{%OnOrOff%}", onOrOff );
+
+            return html;
+        }
+
+        /// <summary>
+        /// Gets the space-remaining html.
+        /// </summary>
+        /// <returns>HTML for space remaining.</returns>
+        private string GetSpaceHtml()
+        {
+            string html = ReadFile( Path.Combine( "html", "space.html" ) );
+            html = AddCommonHtml( html );
+
+            StringBuilder javascriptBuilder = new StringBuilder();
+            StringBuilder htmlBuilder = new StringBuilder();
+
+            DriveInfo[] drives = DriveInfo.GetDrives();
+            foreach( DriveInfo drive in drives )
+            {
+                if( drive.IsReady == false )
+                {
+                    continue;
+                }
+
+                string driveVarName = Regex.Replace( drive.Name, @"[^\w]+", "_" );
+
+                if( driveVarName == "_" )
+                {
+                    driveVarName = "_root";
+                }
+                                                            // Kilo       Mega          Giga
+                double freeGb = drive.AvailableFreeSpace / ( 1000.0 ) / ( 1000.0 ) / ( 1000.0 );
+                double usedGb = ( drive.TotalSize - drive.AvailableFreeSpace ) / ( 1000.0 ) / ( 1000.0 ) / ( 1000.0 );
+                double driveSive = drive.TotalSize / ( 1000.0 ) / ( 1000.0 ) / ( 1000.0 );
+
+                javascriptBuilder.AppendLine( "// -------- Begin " + drive.Name + " -------- " );
+                javascriptBuilder.AppendLine( "var ctx_" + driveVarName + " = document.getElementById(\"" + driveVarName + "\");" );
+                javascriptBuilder.AppendLine( "var data_" + driveVarName + @" = { labels : [ ""Space Used (GB)"", ""Space Remaining (GB)""]," );
+                javascriptBuilder.AppendLine( @" datasets : [" );
+                javascriptBuilder.AppendFormat( @"{{ data: [{0:0.00},{1:0.00}],{2}", usedGb, freeGb, Environment.NewLine);
+                javascriptBuilder.AppendLine( @"backgroundColor: [""#FF6384"", ""#36A2EB""], hoverBackgroundColor: [ ""#FF6384"", ""#36A2EB"" ] }" );
+                javascriptBuilder.AppendLine( "] };" );
+
+                javascriptBuilder.AppendLine( "var chart_" + driveVarName + " = new Chart ( ctx_" + driveVarName + ",{" );
+                javascriptBuilder.AppendLine( "type: 'doughnut', data: data_" + driveVarName + @", animation: { animateScale: true }});" );
+                javascriptBuilder.AppendLine();
+
+                htmlBuilder.AppendLine( "<div>" );
+                htmlBuilder.AppendLine( "<h3>" + drive.Name + "</h3>" );
+                htmlBuilder.AppendLine( @"<canvas id=""" + driveVarName + @""" width=""100"" height=""100""></canvas>" );
+                htmlBuilder.AppendFormat( "<p>Used {0:0.00} of {1:0.00} GB.  {2:0.00} GB remain.</p>{3}", usedGb, driveSive, freeGb, Environment.NewLine );
+                htmlBuilder.AppendLine( "</div>" );
+            }
+
+            html = html.Replace( "{%chartJs%}", javascriptBuilder.ToString() );
+            html = html.Replace( "{%chartHtml%}", htmlBuilder.ToString() );
 
             return html;
         }

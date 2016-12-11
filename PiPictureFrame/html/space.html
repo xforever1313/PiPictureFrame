@@ -1,0 +1,29 @@
+﻿<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    {%CommonHead%}
+    <script src="js/Chart_bundle_min.js"></script>
+    <script>
+        onload = function () {
+            {%chartJs%}
+        }
+    </script>
+</head>
+<body>
+    <div id="layout">
+        {%SideBar%}
+        <div id="main">
+            <div class="header">
+                <h1>Pi Picture Frame</h1>
+                <h2>Space left on system:</h2>
+            </div>
+
+            <div class="content">
+                <noscript><strong>Javascript required to see charts.</strong></noscript>
+                {%chartHtml%}                
+            </div>
+        </div>
+    </div>
+</body>
+</html>
