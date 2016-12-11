@@ -12,12 +12,17 @@ using System.Threading.Tasks;
 using System.Xml;
 using PiPictureFrame.Core.Renderers;
 using PiPictureFrame.Core.Screens;
+using SethCS.Basic;
 
 namespace PiPictureFrame.Core
 {
     public class PictureFrame : IDisposable
     {
         // ---------------- Fields ----------------
+
+        public const string VersionString = "1.0.0";
+
+        public static readonly SemanticVersion Version = SemanticVersion.Parse( VersionString );
 
         private bool isDisposed;
 

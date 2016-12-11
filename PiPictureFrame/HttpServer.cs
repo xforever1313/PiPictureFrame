@@ -431,6 +431,7 @@ namespace PiPictureFrame.Core
             }
             else if( url == "/about.html" )
             {
+                responseString = GetAboutHtml();
             }
             else if( url == "/sleep.html" )
             {
@@ -459,6 +460,14 @@ namespace PiPictureFrame.Core
             else if( url == "/full.html" )
             {
                 responseString = ReadFile( Path.Combine( "html", "full.html" ) );
+            }
+            else if( url == "/license.txt" )
+            {
+                responseString = License.BoostLicense;
+            }
+            else if( url == "/credits.txt" )
+            {
+                responseString = License.Credits;
             }
             else if( url.EndsWith( ".css" ) || url.EndsWith( ".js" ) )
             {
@@ -567,6 +576,19 @@ namespace PiPictureFrame.Core
 
             string onOrOff = this.picFrame.Screen.IsOn ? "Off" : "On";
             html = html.Replace( "{%OnOrOff%}", onOrOff );
+
+            return html;
+        }
+
+        /// <summary>
+        /// Get the about page's HTML.
+        /// </summary>
+        /// <returns>The about page's HTML.</returns>
+        private string GetAboutHtml()
+        {
+            string html = ReadFile( Path.Combine( "html", "about.html" ) );
+            html = html.Replace( "{%Version%}", PictureFrame.VersionString );
+            html = AddCommonHtml( html );
 
             return html;
         }

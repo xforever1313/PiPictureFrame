@@ -13,6 +13,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		.travis.yml = .travis.yml
 		install.sh = install.sh
+		LICENSE_1_0.txt = LICENSE_1_0.txt
 		PKGBUILD = PKGBUILD
 		README.md = README.md
 		RunTest.bat = RunTest.bat

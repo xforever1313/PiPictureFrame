@@ -45,6 +45,7 @@
     <Compile Include="HttpServer.cs" />
     <Compile Include="IRenderer.cs" />
     <Compile Include="IScreen.cs" />
+    <Compile Include="License.cs" />
     <Compile Include="PictureFrame.cs" />
     <Compile Include="PictureFrameConfig.cs" />
     <Compile Include="PictureListManager.cs" />
@@ -54,6 +55,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="config\SampleUserConfig.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="html\about.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="html\css\pure\base-context-min.css">
