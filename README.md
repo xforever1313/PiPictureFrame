@@ -1,7 +1,17 @@
 Pi Picture Frame ==========A way to turn your Raspberry Pi 3 into a digital picture frame!Build Status--------------[![Build Status](https://travis-ci.org/xforever1313/PiPictureFrame.svg?branch=master)](https://travis-ci.org/xforever1313/PiPictureFrame)Installing--------------When using the Raspberry Pi official touchscreen, you need the latest drivers by running: * sudo rpi-updateDependencies:----------Download the following packages using your favorite package manager: * gtk3 * nuget * git * matchbox-keyboard (Optional: useful for touchscreen however) * xscreensaver (To prevent the screen from turning off).Installing Mono:-----Raspbian does not have an up-to-date version of Mono.  Get the most up-to-date by running the following commands:Taken from: [http://www.mono-project.com/docs/getting-started/install/linux/](http://www.mono-project.com/docs/getting-started/install/linux/)``` - sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
  - echo "deb http://download.mono-project.com/repo/debian wheezy main" | sudo tee /etc/apt/sources.list.d/mono-xamarin.list
  - sudo apt-get update
- - sudo apt-get install mono-complete```Building:----------
+ - sudo apt-get install mono-complete```Installing Pqiv:----- * git submodule update --init pqiv * Edit pqiv.c to line 2859 and add fflush(stdout);  In order for .NET to get output from a subprocess, the subprocess needs to flush stdout.```#ifndef CONFIGURED_WITHOUT_ACTIONS
+	if(!option_status_output) {
+		return;
+	}
+	D_LOCK(file_tree);
+	if(file_tree_valid && current_file_node) {
+		printf("CURRENT_FILE_NAME=\"%s\"\nCURRENT_FILE_INDEX=%d\n\n", CURRENT_FILE->file_name, bostree_rank(current_file_node));
+        fflush(stdout);  // NEED TO ADD THIS!
+	}
+	D_UNLOCK(file_tree);
+#endif``` * ./configure * sudo make install # Goes to /user/bin/pqivBuilding:----------
  * git clone https://github.com/xforever1313/PiPictureFrame.git
  * git submodule update --init SethCS
  * cd PiPictureFrame
