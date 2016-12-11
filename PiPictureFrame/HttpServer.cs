@@ -789,7 +789,7 @@ namespace PiPictureFrame.Core
                 pictureContents = ms.ToArray();
             }
 
-            response.ContentType = "media/" + Path.GetExtension( picLocation ).TrimStart( '.' );
+            response.ContentType = "image/" + Path.GetExtension( picLocation ).TrimStart( '.' );
             response.ContentLength64 = pictureContents.Length;
             response.OutputStream.Write( pictureContents, 0, pictureContents.Length );
             response.OutputStream.Flush();
