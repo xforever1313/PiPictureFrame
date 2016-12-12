@@ -1,8 +1,8 @@
 ﻿(function (window, document) {
 
-    var layout = document.getElementById('layout'),
-        menu = document.getElementById('menu'),
-        menuLink = document.getElementById('menuLink');
+    var layout = document.getElementById('layout');
+    var menu = document.getElementById('menu');
+    var menuLink = document.getElementById('menuLink');
 
     function toggleClass(element, className) {
         var classes = element.className.split(/\s+/),
