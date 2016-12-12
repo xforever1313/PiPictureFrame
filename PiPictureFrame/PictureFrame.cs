@@ -277,9 +277,11 @@ namespace PiPictureFrame.Core
                     break;
 
                 case HttpServer.QuitReason.Restarting:
+                    this.Restart();
                     break;
 
                 case HttpServer.QuitReason.ShuttingDown:
+                    this.Shutdown();
                     break;
 
                 case HttpServer.QuitReason.FatalError:
@@ -289,6 +291,60 @@ namespace PiPictureFrame.Core
                     ManualResetEvent e = new ManualResetEvent( false );
                     e.WaitOne();
                     break;
+            }
+        }
+
+        private void Restart()
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            if( ( Environment.OSVersion.Platform == PlatformID.Unix ) || ( Environment.OSVersion.Platform == PlatformID.MacOSX ) )
+            {
+                startInfo.FileName = Path.Combine( "usr", "bin", "reboot" );
+                startInfo.Arguments = "now";
+            }
+            else
+            {
+                startInfo.FileName = Path.Combine( "C:", "Windows", "System32", "shutdown.exe" );
+                startInfo.Arguments = "/r";
+            }
+
+            RunProcess( startInfo, "restart" );
+        }
+
+        private void Shutdown()
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            if( ( Environment.OSVersion.Platform == PlatformID.Unix ) || ( Environment.OSVersion.Platform == PlatformID.MacOSX ) )
+            {
+                startInfo.FileName = Path.Combine( "usr", "bin", "shutdown" );
+                startInfo.Arguments = "-Ph now";
+            }
+            else
+            {
+                startInfo.FileName = Path.Combine( "C:", "Windows", "System32", "shutdown.exe" );
+                startInfo.Arguments = "/s";
+            }
+
+            RunProcess( startInfo, "shutdown" );
+        }
+
+        private void RunProcess( ProcessStartInfo info, string context )
+        {
+            try
+            {
+                using( Process process = new Process() )
+                {
+                    process.StartInfo = info;
+                    process.Start();
+                    process.WaitForExit();
+                }
+            }
+            catch( Exception err )
+            {
+                this.loggingAction?.Invoke( "**************************" );
+                this.loggingAction?.Invoke( "Error when running " + context + " process..." );
+                this.loggingAction?.Invoke( err.ToString() );
+                this.loggingAction?.Invoke( "**************************" );
             }
         }
 
