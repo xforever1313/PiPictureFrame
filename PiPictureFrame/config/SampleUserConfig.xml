@@ -6,10 +6,6 @@
     <photodirectory>/home/picframe/Photos</photodirectory>
     <refreshinterval>3600</refreshinterval>
     <photochangeinterval>60</photochangeinterval>
-    <shutdowncommand>shutdown -Ph now</shutdowncommand>
-    <rebootcommand>reboot</rebootcommand>
-    <!-- Change from virtual console to the GUI (assuming its tty7) -->
-    <exittodesktopcommand>chvt 7</exittodesktopcommand>
     <httpport>80</httpport>
     <brightness>75</brightness>
 </pictureframeconfig>

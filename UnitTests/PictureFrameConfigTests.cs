@@ -81,24 +81,6 @@ namespace UnitTests
             Assert.AreNotEqual( this.uut.GetHashCode(), config2.GetHashCode() );
             config2 = new PictureFrameConfig();
 
-            config2.ShutdownCommand = this.uut.ShutdownCommand + ".";
-            Assert.AreNotEqual( this.uut, config2 );
-            Assert.AreNotEqual( config2, this.uut );
-            Assert.AreNotEqual( this.uut.GetHashCode(), config2.GetHashCode() );
-            config2 = new PictureFrameConfig();
-
-            config2.RebootCommand = this.uut.RebootCommand + ".";
-            Assert.AreNotEqual( this.uut, config2 );
-            Assert.AreNotEqual( config2, this.uut );
-            Assert.AreNotEqual( this.uut.GetHashCode(), config2.GetHashCode() );
-            config2 = new PictureFrameConfig();
-
-            config2.ExitToDesktopCommand = this.uut.ExitToDesktopCommand + ".";
-            Assert.AreNotEqual( this.uut, config2 );
-            Assert.AreNotEqual( config2, this.uut );
-            Assert.AreNotEqual( this.uut.GetHashCode(), config2.GetHashCode() );
-            config2 = new PictureFrameConfig();
-
             config2.Port = (short)( this.uut.Port + 1 );
             Assert.AreNotEqual( this.uut, config2 );
             Assert.AreNotEqual( config2, this.uut );
@@ -199,34 +181,6 @@ namespace UnitTests
                 this.uut.PhotoDirectory = string.Empty;
                 this.DoesNotValidate();
                 this.uut.PhotoDirectory = null;
-                this.DoesNotValidate();
-                this.uut = new PictureFrameConfig();
-            }
-
-            // Empty shutdown command should not validate.
-            {
-                this.uut.ShutdownCommand = string.Empty;
-                this.DoesNotValidate();
-                this.uut.ShutdownCommand = null;
-                this.DoesNotValidate();
-                this.uut = new PictureFrameConfig();
-            }
-
-            // Empty reboot command should not validate.
-            {
-                this.uut.RebootCommand = string.Empty;
-                this.DoesNotValidate();
-                this.uut.RebootCommand = null;
-                this.DoesNotValidate();
-                this.uut = new PictureFrameConfig();
-            }
-
-
-            // Empty exit command should not validate.
-            {
-                this.uut.ExitToDesktopCommand = string.Empty;
-                this.DoesNotValidate();
-                this.uut.ExitToDesktopCommand = null;
                 this.DoesNotValidate();
                 this.uut = new PictureFrameConfig();
             }

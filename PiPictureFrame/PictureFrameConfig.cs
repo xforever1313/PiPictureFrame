@@ -106,18 +106,6 @@ namespace PiPictureFrame.Core
                         config.PhotoChangeInterval = new TimeSpan( 0, 0, int.Parse( childNode.InnerText ) );
                         break;
 
-                    case "shutdowncommand":
-                        config.ShutdownCommand = childNode.InnerText;
-                        break;
-
-                    case "rebootcommand":
-                        config.RebootCommand = childNode.InnerText;
-                        break;
-
-                    case "exittodesktopcommand":
-                        config.ExitToDesktopCommand = childNode.InnerText;
-                        break;
-
                     case "httpport":
                         config.Port = short.Parse( childNode.InnerText );
                         break;
@@ -145,9 +133,6 @@ namespace PiPictureFrame.Core
             this.PhotoDirectory = Path.Combine( "/home", "picframe", "Photos" );
             this.PhotoRefreshInterval = new TimeSpan( 1, 0, 0 );
             this.PhotoChangeInterval = new TimeSpan( 0, 1, 0 );
-            this.ShutdownCommand = "shutdown -Ph now";
-            this.RebootCommand = "reboot";
-            this.ExitToDesktopCommand = "chvt 7";
             this.Port = HttpServer.DefaultPort;
             this.Brightness = 75;
         }
@@ -235,21 +220,6 @@ namespace PiPictureFrame.Core
         public TimeSpan PhotoChangeInterval { get; set; }
 
         /// <summary>
-        /// The command that shuts down the system.
-        /// </summary>
-        public string ShutdownCommand { get; set; }
-
-        /// <summary>
-        /// The command that reboots the system.
-        /// </summary>
-        public string RebootCommand { get; set; }
-
-        /// <summary>
-        /// The command that exits the picture frame to show the desktop.
-        /// </summary>
-        public string ExitToDesktopCommand { get; set; }
-
-        /// <summary>
         /// The port for the HTTP server to run on.
         /// </summary>
         public short Port { get; set; }
@@ -276,21 +246,6 @@ namespace PiPictureFrame.Core
             {
                 success = false;
                 builder.AppendLine( nameof( this.PhotoDirectory ) + " can not be empty, whitespace, or null" );
-            }
-            if( string.IsNullOrEmpty( this.ShutdownCommand ) || string.IsNullOrWhiteSpace( this.ShutdownCommand ) )
-            {
-                success = false;
-                builder.AppendLine( nameof( this.ShutdownCommand ) + " can not be empty, whitespace, or null" );
-            }
-            if( string.IsNullOrEmpty( this.RebootCommand ) || string.IsNullOrWhiteSpace( this.RebootCommand ) )
-            {
-                success = false;
-                builder.AppendLine( nameof( this.RebootCommand ) + " can not be empty, whitespace, or null" );
-            }
-            if( string.IsNullOrEmpty( this.ExitToDesktopCommand ) || string.IsNullOrWhiteSpace( this.ExitToDesktopCommand ) )
-            {
-                success = false;
-                builder.AppendLine( nameof( this.ExitToDesktopCommand ) + " can not be empty, whitespace, or null" );
             }
             if( this.Port < 0 )
             {
@@ -359,9 +314,6 @@ namespace PiPictureFrame.Core
             match &= ( this.PhotoDirectory == other.PhotoDirectory );
             match &= ( this.PhotoRefreshInterval.Equals( other.PhotoRefreshInterval ) );
             match &= ( this.PhotoChangeInterval.Equals( other.PhotoChangeInterval ) );
-            match &= ( this.ShutdownCommand == other.ShutdownCommand );
-            match &= ( this.RebootCommand == other.RebootCommand );
-            match &= ( this.ExitToDesktopCommand == other.ExitToDesktopCommand );
             match &= ( this.Port == other.Port );
             match &= ( this.Brightness == other.Brightness );
 
@@ -385,9 +337,6 @@ namespace PiPictureFrame.Core
             hashCode += this.PhotoDirectory.GetHashCode();
             hashCode += this.PhotoRefreshInterval.GetHashCode();
             hashCode += this.PhotoChangeInterval.GetHashCode();
-            hashCode += this.ShutdownCommand.GetHashCode();
-            hashCode += this.RebootCommand.GetHashCode();
-            hashCode += this.ExitToDesktopCommand.GetHashCode();
             hashCode += this.Port.GetHashCode();
             hashCode += this.Brightness.GetHashCode();
 
@@ -473,27 +422,6 @@ namespace PiPictureFrame.Core
                 XmlElement changeNode = doc.CreateElement( "photochangeinterval" );
                 changeNode.InnerText = ( (int)this.PhotoChangeInterval.TotalSeconds ).ToString();
                 parentNode.AppendChild( changeNode );
-            }
-
-            // Shutdown command
-            {
-                XmlElement shutdownNode = doc.CreateElement( "shutdowncommand" );
-                shutdownNode.InnerText = this.ShutdownCommand;
-                parentNode.AppendChild( shutdownNode );
-            }
-
-            // Restart command
-            {
-                XmlElement rebootNode = doc.CreateElement( "rebootcommand" );
-                rebootNode.InnerText = this.RebootCommand;
-                parentNode.AppendChild( rebootNode );
-            }
-
-            // Exit to desktop command
-            {
-                XmlElement exitNode = doc.CreateElement( "exittodesktopcommand" );
-                exitNode.InnerText = this.ExitToDesktopCommand;
-                parentNode.AppendChild( exitNode );
             }
 
             // HTTP Port
