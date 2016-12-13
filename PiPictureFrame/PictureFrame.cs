@@ -31,6 +31,7 @@ namespace PiPictureFrame.Core
         private Action<string> loggingAction;
 
         private PictureFrameConfig config;
+        private object configLock;
 
         private static readonly string rootFolder;
 
@@ -53,6 +54,8 @@ namespace PiPictureFrame.Core
             this.isDisposed = false;
 
             this.nextPictureEvent = new AutoResetEvent( false );
+
+            this.configLock = new object();
 
             this.isRunningLock = new object();
             this.isRunning = false;
@@ -153,9 +156,12 @@ namespace PiPictureFrame.Core
         /// </summary>
         public void SaveConfig()
         {
-            if( this.config == null )
+            lock( this.configLock )
             {
-                throw new InvalidOperationException( "Config is null, call " + nameof( this.Init ) + " first" );
+                if( this.config == null )
+                {
+                    throw new InvalidOperationException( "Config is null, call " + nameof( this.Init ) + " first" );
+                }
             }
 
             XmlDocument doc = new XmlDocument();
@@ -170,7 +176,10 @@ namespace PiPictureFrame.Core
             XmlElement configElement = doc.CreateElement( "pictureframeconfig" );
             doc.AppendChild( configElement );
 
-            this.config.ToXml( configElement, doc );
+            lock( this.configLock )
+            {
+                this.config.ToXml( configElement, doc );
+            }
 
             if( Directory.Exists( rootFolder ) == false )
             {
@@ -256,12 +265,29 @@ namespace PiPictureFrame.Core
         }
 
         /// <summary>
+        /// Configures the picture frame.
+        /// </summary>
+        /// <param name="config">The config to use.</param>
+        public void Configure( PictureFrameConfig config )
+        {
+            config.Validate();
+            lock( this.configLock )
+            {
+                this.config = config.Clone();
+            }
+            this.SaveConfig();
+        }
+
+        /// <summary>
         /// Gets a COPY of the current Picture Frame Config.
         /// </summary>
         /// <returns>A deep copy of the current picture frame config.</returns>
         public PictureFrameConfig GetCurrentConfig()
         {
-            return this.config.Clone();
+            lock( this.configLock )
+            {
+                return this.config.Clone();
+            }
         }
 
         /// <summary>
@@ -364,8 +390,14 @@ namespace PiPictureFrame.Core
         {
             while( this.IsRunning )
             {
+                int waitTime;
+                lock( this.configLock )
+                {
+                    waitTime = (int)this.config.PhotoChangeInterval.TotalMilliseconds;
+                }
+
                 // Use AutoResetEvent so if it times out, or the user triggers it, change the picture.
-                this.nextPictureEvent.WaitOne( (int)this.config.PhotoChangeInterval.TotalMilliseconds );
+                this.nextPictureEvent.WaitOne( waitTime );
                 if( this.IsRunning )
                 {
                     this.loggingAction?.Invoke( "Changing Picture..." );

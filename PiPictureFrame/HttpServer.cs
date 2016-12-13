@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
@@ -422,7 +423,7 @@ namespace PiPictureFrame.Core
             }
             else if( url == "/settings.html" )
             {
-                responseString = GetSettingsHtml( string.Empty );
+                responseString = GetSettingsHtml( request );
             }
             else if( url == "/turnoff.html" )
             {
@@ -557,14 +558,113 @@ namespace PiPictureFrame.Core
         /// Gets the setting page's html.
         /// </summary>
         /// <returns>The setting page's html.</returns>
-        private string GetSettingsHtml( string errorMessage )
+        private string GetSettingsHtml( HttpListenerRequest request )
         {
             string html = ReadFile( Path.Combine( "html", "settings.html" ) );
             html = AddCommonHtml( html );
+            if( request.HttpMethod == "POST" )
+            {
+                PictureFrameConfig config = this.picFrame.GetCurrentConfig();
+                try
+                {
+                    PopulateSettings( request, config );
+
+                    string errorString;
+                    if( config.TryValidate( out errorString ) == false )
+                    {
+                        html = html.Replace( "{%ErrorMessage%}", errorString );
+                    }
+                    else
+                    {
+                        this.picFrame.Configure( config );
+                        html = html.Replace( "{%ErrorMessage%}", string.Empty );
+                    }
+                }
+                catch( Exception err )
+                {
+                    html = html.Replace(
+                        "{%ErrorMessage%}",
+                        HttpUtility.HtmlEncode( "Error when saving settings: " + Environment.NewLine + err.ToString() )
+                    );
+                }
+            }
+            else
+            {
+                html = html.Replace( "{%ErrorMessage%}", string.Empty );
+            }
+
             html = AddSettingsHtml( html );
-            html = html.Replace( "{%ErrorMessage%}", HttpUtility.HtmlEncode( errorMessage ) );
 
             return html;
+        }
+
+        private void PopulateSettings( HttpListenerRequest request, PictureFrameConfig config )
+        {
+            NameValueCollection queryString;
+            using( StreamReader reader = new StreamReader( request.InputStream ) )
+            {
+                queryString = HttpUtility.ParseQueryString( reader.ReadToEnd() );
+            }
+
+            string neverSleepStr = queryString.Get( "noSleepCheckbox" );
+            if( neverSleepStr == "on" )
+            {
+                config.AwakeTime = null;
+                config.SleepTime = null;
+            }
+            else
+            {
+                DateTime now = DateTime.Now;
+
+                string sleepTimeHourStr = queryString.Get( "sleepTimeHour" );
+                string sleepTimeMinStr = queryString.Get( "sleepTimeMin" );
+
+                int sleepHour = int.Parse( sleepTimeHourStr );
+                int sleepMin = int.Parse( sleepTimeMinStr );
+
+                config.SleepTime = new DateTime(
+                    now.Year,
+                    now.Month,
+                    now.Day,
+                    sleepHour,
+                    sleepMin,
+                    0
+                );
+
+                string awakeTimeHourStr = queryString.Get( "wakeTimeHour" );
+                string awakeTimeMinStr = queryString.Get( "wakeTimeMin" );
+
+                int awakeHour = int.Parse( awakeTimeHourStr );
+                int awakeMin = int.Parse( awakeTimeMinStr );
+
+                config.AwakeTime = new DateTime(
+                    now.Year,
+                    now.Month,
+                    now.Day,
+                    awakeHour,
+                    awakeMin,
+                    0
+                );
+            }
+
+            string brightnessStr = queryString.Get( "brightness" );
+            config.Brightness = ushort.Parse( brightnessStr );
+
+            // Compare strings for 0.25 and 0.5 since double are not accurrate.
+            string intervalStr = queryString.Get( "interval" );
+            if( intervalStr.StartsWith( "0.25" ) )
+            {
+                config.PhotoChangeInterval = new TimeSpan( 0, 0, 15 );
+            }
+            else if( intervalStr.StartsWith( "0.5" ) )
+            {
+                config.PhotoChangeInterval = new TimeSpan( 0, 0, 30 );
+            }
+            else
+            {
+                int minute = int.Parse( intervalStr );
+                config.PhotoChangeInterval = new TimeSpan( 0, minute, 0 );
+            }
         }
 
         /// <summary>

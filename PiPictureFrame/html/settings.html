@@ -16,17 +16,17 @@
             <div class="content">
                 <p>{%ErrorMessage%}</p>
 
-                <form class="pure-form" action="/updatesettings.html" method="POST">
+                <form class="pure-form" action="/settings.html" method="POST">
                     <h2 class="content-subhead">Change Sleep/Awake Time:</h2>
                     <p>
                         <label for="sleepTimeHour">Turn off screen at:</label>
                     </p>
                     <p>
-                        <select id="sleepTimeHour">
+                        <select id="sleepTimeHour" name="sleepTimeHour">
                             {%SleepHourOptions%}
                         </select>
                         :
-                        <select id="sleepTimeMin">
+                        <select id="sleepTimeMin" name="sleepTimeMin">
                             {%SleepMinuteOptions%}
                         </select>
                     </p>
@@ -35,18 +35,18 @@
                         <label for="wakeTimeHour">Turn on screen at:</label>
                     </p>
                     <p>
-                        <select id="wakeTimeHour">
+                        <select id="wakeTimeHour" name="wakeTimeHour">
                             {%AwakeHourOptions%}
                         </select>
                         :
-                        <select id="wakeTimeMin">
+                        <select id="wakeTimeMin" name="wakeTimeMin">
                             {%AwakeMinuteOptions%}
                         </select>
                     </p>
 
                     <p>
                         <label for="noSleepCheckbox" class="pure-checkbox">
-                            <input id="noSleepCheckbox" type="checkbox" {%NoSleepChecked%}>
+                            <input id="noSleepCheckbox" name="noSleepCheckbox" type="checkbox" {%NoSleepChecked%}>
                             Never go to sleep.
                             </input>
                         </label>
@@ -57,7 +57,7 @@
                         <label for="brightness">How bright to make the screen (0-100)</label>
                     </p>
                     <p>
-                        <select id="brightness">
+                        <select id="brightness" name="brightness">
                             {%BrightnessOptions%}
                         </select>
                     </p>
@@ -67,7 +67,7 @@
                         <label for="interval">Change photo every __ minutes:</label>
                     </p>
                     <p>
-                        <select id="interval">
+                        <select id="interval" name="interval">
                             {%IntervalOptions%}
                         </select>
                     </p>
