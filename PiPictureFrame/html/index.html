@@ -16,7 +16,9 @@
             <div class="content">
                 <h2 class="content-subhead">Current Image:</h2>
                 <p>
-                    <img src="current.jpg" alt="Current Image" width="400" height="300" />
+                    {%CurrentPicPath%}
+                    <!-- Doesn't work yet.... current.jpg is too slow. -->
+                    <!-- <img src="current.jpg" alt="Current Image" width="400" height="300" /> -->
                 </p>
 
                 <form action="/changepicture.html" method="post">

@@ -8,12 +8,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
+using System.Web;
 
 namespace PiPictureFrame.Core
 {
@@ -545,10 +544,11 @@ namespace PiPictureFrame.Core
         /// Gets the home page's html
         /// </summary>
         /// <returns>The home page's html.</returns>
-        private static string GetIndexHtml()
+        private string GetIndexHtml()
         {
             string html = ReadFile( Path.Combine( "html", "index.html" ) );
             html = AddCommonHtml( html );
+            html = html.Replace( "{%CurrentPicPath%}", HttpUtility.HtmlEncode( this.picFrame.CurrentPictureLocation ) );
 
             return html;
         }
@@ -562,7 +562,7 @@ namespace PiPictureFrame.Core
             string html = ReadFile( Path.Combine( "html", "settings.html" ) );
             html = AddCommonHtml( html );
             html = AddSettingsHtml( html );
-            html = html.Replace( "{%ErrorMessage%}", errorMessage );
+            html = html.Replace( "{%ErrorMessage%}", HttpUtility.HtmlEncode( errorMessage ) );
 
             return html;
         }
@@ -575,7 +575,7 @@ namespace PiPictureFrame.Core
         private string GetTurnOffHtml( string message )
         {
             string html = ReadFile( Path.Combine( "html", "turnoff.html" ) );
-            html = html.Replace( "{%Message%}", message );
+            html = html.Replace( "{%Message%}", HttpUtility.HtmlEncode( message ) );
             html = AddCommonHtml( html );
 
             string onOrOff = this.picFrame.Screen.IsOn ? "Off" : "On";
