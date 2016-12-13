@@ -256,6 +256,15 @@ namespace PiPictureFrame.Core
         }
 
         /// <summary>
+        /// Gets a COPY of the current Picture Frame Config.
+        /// </summary>
+        /// <returns>A deep copy of the current picture frame config.</returns>
+        public PictureFrameConfig GetCurrentConfig()
+        {
+            return this.config.Clone();
+        }
+
+        /// <summary>
         /// Handles the quit event.
         /// </summary>
         /// <param name="reason">The reason why we are quitting.</param>

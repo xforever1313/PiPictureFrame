@@ -78,12 +78,12 @@ namespace PiPictureFrame.Core
         /// <summary>
         /// Options for changing pictures in minutes.
         /// </summary>
-        private static List<int> picChangeIntervalOptions;
+        private static List<double> picChangeIntervalOptions;
 
         /// <summary>
-        /// Options for changing pictures in hours.
+        /// Options for brightness.
         /// </summary>
-        private static List<int> picRefreshIntervalOptions;
+        private static List<int> brightnessOptions;
 
         // ---------------- Enums ----------------
 
@@ -182,14 +182,14 @@ namespace PiPictureFrame.Core
                 minuteOptions.Add( minute );
             }
 
-            picChangeIntervalOptions = new List<int>()
+            picChangeIntervalOptions = new List<double>()
             {
-                1, 2, 3, 4, 5, 10, 15, 20, 30, 45, 60
+                0.25, 0.5, 1, 2, 3, 4, 5, 10, 15, 20, 30, 45, 60
             };
 
-            picRefreshIntervalOptions = new List<int>()
+            brightnessOptions = new List<int>()
             {
-                1, 2, 3, 4, 5, 0
+                0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100
             };
         }
 
@@ -557,7 +557,7 @@ namespace PiPictureFrame.Core
         /// Gets the setting page's html.
         /// </summary>
         /// <returns>The setting page's html.</returns>
-        private static string GetSettingsHtml( string errorMessage )
+        private string GetSettingsHtml( string errorMessage )
         {
             string html = ReadFile( Path.Combine( "html", "settings.html" ) );
             html = AddCommonHtml( html );
@@ -690,12 +690,59 @@ namespace PiPictureFrame.Core
         /// </summary>
         /// <param name="html">Adds the settings HTML</param>
         /// <returns></returns>
-        private static string AddSettingsHtml( string html )
+        private string AddSettingsHtml( string html )
         {
-            html = html.Replace( "{%HourOptions%}", ListToHtmlOptions( hourOptions ) );
-            html = html.Replace( "{%MinuteOptions%}", ListToHtmlOptions( minuteOptions ) );
-            html = html.Replace( "{%RefreshOptions%}", ListToHtmlOptions( picRefreshIntervalOptions ) );
-            html = html.Replace( "{%IntervalOptions%}", ListToHtmlOptions( picChangeIntervalOptions ) );
+            PictureFrameConfig config = this.picFrame.GetCurrentConfig();
+
+            DateTime now = DateTime.Now;
+
+            bool isChecked = false;
+            if( ( config.AwakeTime.HasValue == false ) || ( config.SleepTime.HasValue == false ) )
+            {
+                isChecked = true;
+            }
+
+            html = html.Replace(
+                "{%NoSleepChecked%}",
+                isChecked ? "checked" : string.Empty
+            );
+
+            config.AwakeTime = config.AwakeTime ?? new DateTime( now.Year, now.Month, now.Day, 0, 0, 0 );
+            config.SleepTime = config.SleepTime ?? new DateTime( now.Year, now.Month, now.Day, 0, 0, 0 );
+
+            // ---- Sleep Time ----
+            html = html.Replace(
+                "{%SleepHourOptions%}",
+                ListToHtmlOptions( hourOptions, config.SleepTime.Value.Hour )
+            );
+
+            html = html.Replace(
+                "{%SleepMinuteOptions%}",
+                ListToHtmlOptions( minuteOptions, config.SleepTime.Value.Minute )
+            );
+
+            // ---- Awake Time ----
+            html = html.Replace(
+                "{%AwakeHourOptions%}",
+                ListToHtmlOptions( hourOptions, config.AwakeTime.Value.Hour )
+            );
+
+            html = html.Replace(
+                "{%AwakeMinuteOptions%}",
+                ListToHtmlOptions( minuteOptions, config.AwakeTime.Value.Minute )
+            );
+
+            // ---- Brightness ----
+            html = html.Replace(
+                "{%BrightnessOptions%}",
+                ListToHtmlOptions( brightnessOptions, config.Brightness )
+            );
+
+            // ---- Interval ----
+            html = html.Replace(
+                "{%IntervalOptions%}",
+                ListToHtmlOptions( picChangeIntervalOptions, config.PhotoChangeInterval.TotalSeconds / 60.0 )
+            );
 
             return html;
         }
@@ -843,14 +890,15 @@ namespace PiPictureFrame.Core
         /// </summary>
         /// <param name="list">List to convert to.</param>
         /// <returns>Returns the HTML options from the list.</returns>
-        private static string ListToHtmlOptions<T>( IList<T> list )
+        private static string ListToHtmlOptions<T>( IList<T> list, T selected )
         {
             StringBuilder builder = new StringBuilder();
             foreach( T element in list )
             {
                 builder.AppendFormat(
-                    "<option>{0}</option>{1}",
+                    "<option value=\"{0}\" {1}>{0}</option>{2}",
                     element.ToString(),
+                    selected.Equals( element ) ? "selected" : string.Empty,
                     Environment.NewLine
                 );
             }

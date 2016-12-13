@@ -23,11 +23,11 @@
                     </p>
                     <p>
                         <select id="sleepTimeHour">
-                            {%HourOptions%}
+                            {%SleepHourOptions%}
                         </select>
                         :
                         <select id="sleepTimeMin">
-                            {%MinuteOptions%}
+                            {%SleepMinuteOptions%}
                         </select>
                     </p>
 
@@ -36,29 +36,29 @@
                     </p>
                     <p>
                         <select id="wakeTimeHour">
-                            {%HourOptions%}
+                            {%AwakeHourOptions%}
                         </select>
                         :
                         <select id="wakeTimeMin">
-                            {%MinuteOptions%}
+                            {%AwakeMinuteOptions%}
                         </select>
                     </p>
 
                     <p>
                         <label for="noSleepCheckbox" class="pure-checkbox">
-                            <input id="noSleepCheckbox" type="checkbox">
+                            <input id="noSleepCheckbox" type="checkbox" {%NoSleepChecked%}>
                             Never go to sleep.
                             </input>
                         </label>
                     </p>
 
-                    <h2 class="content-subhead">Photo Refresh Interval:</h2>
+                    <h2 class="content-subhead">Brightness:</h2>
                     <p>
-                        <label for="refreshInterval">How often to check for new photos (hours).  Zero for never:</label>
+                        <label for="brightness">How bright to make the screen (0-100)</label>
                     </p>
                     <p>
-                        <select id="refreshInterval">
-                            {%RefreshOptions%}
+                        <select id="brightness">
+                            {%BrightnessOptions%}
                         </select>
                     </p>
 
