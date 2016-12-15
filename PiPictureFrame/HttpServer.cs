@@ -648,7 +648,7 @@ namespace PiPictureFrame.Core
             }
 
             string brightnessStr = queryString.Get( "brightness" );
-            config.Brightness = ushort.Parse( brightnessStr );
+            config.Brightness = short.Parse( brightnessStr );
 
             // Compare strings for 0.25 and 0.5 since double are not accurrate.
             string intervalStr = queryString.Get( "interval" );

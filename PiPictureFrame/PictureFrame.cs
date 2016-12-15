@@ -158,10 +158,18 @@ namespace PiPictureFrame.Core
         {
             lock( this.configLock )
             {
-                if( this.config == null )
-                {
-                    throw new InvalidOperationException( "Config is null, call " + nameof( this.Init ) + " first" );
-                }
+                this.SaveConfigNoLock();
+            }
+        }
+
+        /// <summary>
+        /// Saves the config with no lock.
+        /// </summary>
+        private void SaveConfigNoLock()
+        {
+            if( this.config == null )
+            {
+                throw new InvalidOperationException( "Config is null, call " + nameof( this.Init ) + " first" );
             }
 
             XmlDocument doc = new XmlDocument();
@@ -176,10 +184,7 @@ namespace PiPictureFrame.Core
             XmlElement configElement = doc.CreateElement( "pictureframeconfig" );
             doc.AppendChild( configElement );
 
-            lock( this.configLock )
-            {
-                this.config.ToXml( configElement, doc );
-            }
+            this.config.ToXml( configElement, doc );
 
             if( Directory.Exists( rootFolder ) == false )
             {
@@ -271,11 +276,19 @@ namespace PiPictureFrame.Core
         public void Configure( PictureFrameConfig config )
         {
             config.Validate();
+            bool togglePhoto;
             lock( this.configLock )
             {
+                togglePhoto = this.config.PhotoChangeInterval != config.PhotoChangeInterval;
                 this.config = config.Clone();
+                this.Screen.Brightness = this.config.Brightness;
+                this.SaveConfigNoLock();
             }
-            this.SaveConfig();
+
+            if( togglePhoto )
+            {
+                this.ToggleNextPhoto();
+            }
         }
 
         /// <summary>

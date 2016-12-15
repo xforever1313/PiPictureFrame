@@ -201,6 +201,14 @@ namespace UnitTests
                 this.uut.Brightness = 100;
                 this.Validates();
                 this.uut = new PictureFrameConfig();
+
+                this.uut.Brightness = 0;
+                this.Validates();
+                this.uut = new PictureFrameConfig();
+
+                this.uut.Brightness = -1;
+                this.DoesNotValidate();
+                this.uut = new PictureFrameConfig();
             }
         }
 

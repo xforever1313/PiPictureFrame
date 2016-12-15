@@ -111,7 +111,7 @@ namespace PiPictureFrame.Core
                         break;
 
                     case "brightness":
-                        config.Brightness = ushort.Parse( childNode.InnerText );
+                        config.Brightness = short.Parse( childNode.InnerText );
                         break;
                 }
             }
@@ -227,7 +227,7 @@ namespace PiPictureFrame.Core
         /// <summary>
         /// The brightness on a scale from 0-100.
         /// </summary>
-        public ushort Brightness { get; set; }
+        public short Brightness { get; set; }
 
         // ---------------- Functions ----------------
 
@@ -252,7 +252,7 @@ namespace PiPictureFrame.Core
                 success = false;
                 builder.AppendLine( nameof( this.Port ) + " can not be negative" );
             }
-            if( this.Brightness > 100 )
+            if( ( this.Brightness > 100 ) || ( this.Brightness < 0 ) )
             {
                 success = false;
                 builder.AppendLine( nameof( this.Brightness ) + " can not be more than 100" );
