@@ -44,6 +44,10 @@ namespace PiPictureFrame.Core
 
         private IRenderer renderer;
 
+        private EventScheduler scheduler;
+        private int awakeEventId;
+        private int sleepEventId;
+
         // ---------------- Constructor ----------------
 
         /// <summary>
@@ -52,6 +56,7 @@ namespace PiPictureFrame.Core
         public PictureFrame()
         {
             this.isDisposed = false;
+            this.scheduler = new EventScheduler();
 
             this.nextPictureEvent = new AutoResetEvent( false );
 
@@ -59,6 +64,9 @@ namespace PiPictureFrame.Core
 
             this.isRunningLock = new object();
             this.isRunning = false;
+
+            this.awakeEventId = -1;
+            this.sleepEventId = -1;
         }
 
         /// <summary>
@@ -149,6 +157,8 @@ namespace PiPictureFrame.Core
 
             this.renderer = new PqivRenderer( this.loggingAction );
             this.renderer.Init( this.config.PhotoDirectory );
+
+            this.ScheduleEventsNoLock();
         }
 
         /// <summary>
@@ -282,6 +292,7 @@ namespace PiPictureFrame.Core
                 togglePhoto = this.config.PhotoChangeInterval != config.PhotoChangeInterval;
                 this.config = config.Clone();
                 this.Screen.Brightness = this.config.Brightness;
+                this.ScheduleEventsNoLock();
                 this.SaveConfigNoLock();
             }
 
@@ -301,6 +312,65 @@ namespace PiPictureFrame.Core
             {
                 return this.config.Clone();
             }
+        }
+
+        private void ScheduleEventsNoLock()
+        {
+            if( this.config.AwakeTime.HasValue && this.config.SleepTime.HasValue )
+            {
+                // If there's a value in both, delete any existing events,
+                // and add new ones.
+                this.RemoveAwakeSleepEvents();
+
+                // Schedule Awake Time.
+                this.awakeEventId = this.scheduler.ScheduleRecurringEvent(
+                    CalculateFirstEvent( this.config.AwakeTime.Value ),
+                    new TimeSpan( 24, 0, 0 ),
+                    () => this.Screen.IsOn = true
+                );
+
+                this.sleepEventId = this.scheduler.ScheduleRecurringEvent(
+                    CalculateFirstEvent( this.config.SleepTime.Value ),
+                    new TimeSpan( 24, 0, 0 ),
+                    () => this.Screen.IsOn = false
+                );
+            }
+            else
+            {
+                this.RemoveAwakeSleepEvents();
+            }
+        }
+
+        private void RemoveAwakeSleepEvents()
+        {
+            if( this.awakeEventId != -1 )
+            {
+                this.scheduler.StopEvent( this.awakeEventId );
+                this.awakeEventId = -1;
+            }
+
+            if( this.sleepEventId != -1 )
+            {
+                this.scheduler.StopEvent( this.sleepEventId );
+                this.sleepEventId = -1;
+            }
+        }
+
+        private TimeSpan CalculateFirstEvent( DateTime startTime )
+        {
+            DateTime now = DateTime.Now;
+            startTime = new DateTime( now.Year, now.Month, now.Day, startTime.Hour, startTime.Minute, now.Second );
+
+            TimeSpan delta = startTime - now;
+
+            // If we are less than zero, we need to go to the next day.
+            while( delta.TotalMilliseconds < 0 )
+            {
+                startTime = new DateTime( now.Year, now.Month, now.Day + 1, startTime.Hour, startTime.Minute, now.Second );
+                delta = startTime - now;
+            }
+
+            return delta;
         }
 
         /// <summary>
