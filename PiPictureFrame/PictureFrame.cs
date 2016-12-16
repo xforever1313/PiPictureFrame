@@ -265,7 +265,14 @@ namespace PiPictureFrame.Core
             }
             finally
             {
-                this.renderer?.Dispose();
+                try
+                {
+                    this.scheduler?.Dispose();
+                }
+                finally
+                {
+                    this.renderer?.Dispose();
+                }
             }
 
             this.isDisposed = true;
@@ -418,7 +425,6 @@ namespace PiPictureFrame.Core
             if( ( Environment.OSVersion.Platform == PlatformID.Unix ) || ( Environment.OSVersion.Platform == PlatformID.MacOSX ) )
             {
                 startInfo.FileName = Path.Combine( "usr", "bin", "reboot" );
-                startInfo.Arguments = "now";
             }
             else
             {
