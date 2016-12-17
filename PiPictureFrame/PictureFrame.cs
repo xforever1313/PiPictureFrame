@@ -216,6 +216,10 @@ namespace PiPictureFrame.Core
 
             this.IsRunning = true;
 
+            // Turn on brightness.
+            this.Screen.Brightness = this.config.Brightness;
+            this.Screen.IsOn = true;
+
             this.nextPictureThread = new Thread( this.NextPictureThreadRunner );
             this.nextPictureThread.Start();
 
