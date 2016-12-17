@@ -5,10 +5,10 @@
 //          http://www.boost.org/LICENSE_1_0.txt)
 
 using System;
-using System.IO;
-using SethCS.Extensions;
-using PiPictureFrame.Core;
 using System.Collections.Generic;
+using System.IO;
+using PiPictureFrame.Core;
+using SethCS.Extensions;
 
 namespace PiPictureFrame.Cli
 {

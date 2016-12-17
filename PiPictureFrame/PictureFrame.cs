@@ -424,7 +424,8 @@ namespace PiPictureFrame.Core
             ProcessStartInfo startInfo = new ProcessStartInfo();
             if( ( Environment.OSVersion.Platform == PlatformID.Unix ) || ( Environment.OSVersion.Platform == PlatformID.MacOSX ) )
             {
-                startInfo.FileName = Path.Combine( "usr", "bin", "reboot" );
+                startInfo.FileName = Path.Combine( "usr", "bin", "sudo" );
+                startInfo.Arguments = "reboot";
             }
             else
             {
@@ -440,8 +441,8 @@ namespace PiPictureFrame.Core
             ProcessStartInfo startInfo = new ProcessStartInfo();
             if( ( Environment.OSVersion.Platform == PlatformID.Unix ) || ( Environment.OSVersion.Platform == PlatformID.MacOSX ) )
             {
-                startInfo.FileName = Path.Combine( "usr", "bin", "shutdown" );
-                startInfo.Arguments = "-Ph now";
+                startInfo.FileName = Path.Combine( "usr", "bin", "sudo" );
+                startInfo.Arguments = "shutdown -Ph now";
             }
             else
             {
