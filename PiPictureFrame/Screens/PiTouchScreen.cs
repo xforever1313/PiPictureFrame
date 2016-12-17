@@ -59,7 +59,7 @@ namespace PiPictureFrame.Core.Screens
                     }
 
                     // De-normalize.
-                    int brightness = ( value ) / ( 100 ) * 255;
+                    int brightness = (int)Math.Floor( ( value ) / ( 100.0 ) * 255.0 );
                     lock( brightnessFile )
                     {
                         if( this.WriteFile( brightnessFile, brightness.ToString() ) )
