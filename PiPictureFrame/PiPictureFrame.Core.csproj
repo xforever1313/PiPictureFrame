@@ -193,5 +193,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  <Import Project="..\SethCS\SethCS\SethCS.projitems" Label="Shared" />
+  <ItemGroup>
+    <ProjectReference Include="..\SethCS\LibSethCS\LibSethCS.csproj" />
+  </ItemGroup>
 </Project>
