@@ -22,7 +22,7 @@ namespace PiPictureFrame.Core
 
         public const string VersionString = "1.0.0";
 
-        public static readonly SemanticVersion Version = SemanticVersion.Parse( VersionString );
+        public static readonly Version Version = Version.Parse( VersionString );
 
         private bool isDisposed;
 
