@@ -1,0 +1,75 @@
+/*
+ * -- LAYOUT STYLES --
+ * This layout consists of two main elements, `#nav` (navigation bar), and `#main` (content). All 2 elements are within `#layout`
+ */
+#layout, #nav {
+    margin: 0;
+    padding: 0;
+}
+
+#main {
+    margin: 0;
+    padding: 2em;
+}
+
+/*
+ * -- TABLET (AND UP) MEDIA QUERIES --
+ * On tablets and other medium-sized devices, we want to customize some
+ * of the mobile styles.
+ */
+@media (min-width: 40em) {
+
+    /* Move the layout over so we can fit the nav + list in on the left */
+    #layout {
+        padding-left:500px; /* "left col (nav + list)" width */
+        position: relative;
+    }
+
+    #nav {
+        margin-left:-500px; /* "left col (nav + list)" width */
+        width:150px;
+        height: 100%;
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        overflow: auto;
+    }
+
+    /* Show the menu items on the larger screen */
+    .nav-inner {
+        display: block;
+        padding: 2em 0;
+    }
+
+    /* Hide the "Menu" button on larger screens */
+    #nav .nav-menu-button {
+        display: none;
+    }
+
+    #main {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 150px;
+        overflow: auto;
+        width: auto; /* so that it's not 100% */
+    }
+
+}
+
+/*
+ * -- DESKTOP (AND UP) MEDIA QUERIES --
+ * On desktops and other large-sized devices, we want to customize some
+ * of the mobile styles.
+ */
+@media (min-width: 60em) {
+
+    /* This will now take up it's own column, so don't need position: fixed; */
+    #main {
+        position: fixed;
+        margin: 0;
+        padding: 2em;
+    }
+}
+
