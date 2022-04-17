@@ -2,7 +2,22 @@
     ViewData["Title"] = "Home Page";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="header">
+    <h1>Pi Picture Frame</h1>
+    <h2>Web Control Interface</h2>
+</div>
+
+<div class="content">
+    <h2 class="content-subhead">Current Image:</h2>
+    <p>
+        TODO
+        <!-- Doesn't work yet.... current.jpg is too slow. -->
+        <!-- <img src="current.jpg" alt="Current Image" width="400" height="300" /> -->
+    </p>
+
+    <form action="/changepicture.html" method="post">
+        <p>
+            <input id="changeImageButton" class="button-xlarge button-blue pure-button" name="changeImageButton" type="submit" value="Change Image Now" />
+        </p>
+    </form>
 </div>
