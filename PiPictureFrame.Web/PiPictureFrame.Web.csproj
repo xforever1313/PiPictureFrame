@@ -6,4 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\PiPictureFrame.Api\PiPictureFrame.Api.csproj" />
+    <ProjectReference Include="..\SethCS\LibSethCS\LibSethCS.csproj" />
+  </ItemGroup>
+
 </Project>

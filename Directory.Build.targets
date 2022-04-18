@@ -1,0 +1,6 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)\SethCS\Directory.Build.targets"/>
+  <ItemGroup>
+    <PackageReference Update="Microsoft.Extensions.Logging" Version="6.0.0" />
+  </ItemGroup>
+</Project>
