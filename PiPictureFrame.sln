@@ -5,10 +5,6 @@ VisualStudioVersion = 17.1.32328.378
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PiPictureFrame.Core", "PiPictureFrame\PiPictureFrame.Core.csproj", "{5FB823FD-88B4-4D04-9240-CE0779519045}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PiPictureFrame.Cli", "PiPictureFrame.Cli\PiPictureFrame.Cli.csproj", "{F1C891D4-B892-44AA-94A7-40FBFF0036D2}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PiPictureFrame.Service", "PiPictureFrame.Service\PiPictureFrame.Service.csproj", "{9DCAF1A7-DBCB-42EF-BD2C-BB8E2F821348}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6984111F-064C-4781-9612-BBB76C7FBF4C}"
 	ProjectSection(SolutionItems) = preProject
 		.travis.yml = .travis.yml
@@ -45,14 +41,6 @@ Global
 		{5FB823FD-88B4-4D04-9240-CE0779519045}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5FB823FD-88B4-4D04-9240-CE0779519045}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5FB823FD-88B4-4D04-9240-CE0779519045}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F1C891D4-B892-44AA-94A7-40FBFF0036D2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F1C891D4-B892-44AA-94A7-40FBFF0036D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F1C891D4-B892-44AA-94A7-40FBFF0036D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F1C891D4-B892-44AA-94A7-40FBFF0036D2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9DCAF1A7-DBCB-42EF-BD2C-BB8E2F821348}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9DCAF1A7-DBCB-42EF-BD2C-BB8E2F821348}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9DCAF1A7-DBCB-42EF-BD2C-BB8E2F821348}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9DCAF1A7-DBCB-42EF-BD2C-BB8E2F821348}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3FF77B11-4EA1-4B55-9DE1-19155C9E9AE4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3FF77B11-4EA1-4B55-9DE1-19155C9E9AE4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3FF77B11-4EA1-4B55-9DE1-19155C9E9AE4}.Release|Any CPU.ActiveCfg = Release|Any CPU
