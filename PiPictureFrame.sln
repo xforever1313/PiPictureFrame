@@ -29,6 +29,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PiPictureFrame.Web", "PiPic
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Seth.Analyzer", "SethCS\Seth.Analyzer\Seth.Analyzer.csproj", "{5FD51224-3297-4763-BDC2-F7BCA6311DFE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PiPictureFrame.Api", "PiPictureFrame.Api\PiPictureFrame.Api.csproj", "{BCEEFAF9-49EF-4CB2-892B-F87DF1A96A91}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		SethCS\SethCS\SethCS.projitems*{296fe0a3-baea-4234-ae51-c01ec3f9c153}*SharedItemsImports = 5
@@ -67,6 +69,10 @@ Global
 		{5FD51224-3297-4763-BDC2-F7BCA6311DFE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5FD51224-3297-4763-BDC2-F7BCA6311DFE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5FD51224-3297-4763-BDC2-F7BCA6311DFE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BCEEFAF9-49EF-4CB2-892B-F87DF1A96A91}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BCEEFAF9-49EF-4CB2-892B-F87DF1A96A91}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BCEEFAF9-49EF-4CB2-892B-F87DF1A96A91}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BCEEFAF9-49EF-4CB2-892B-F87DF1A96A91}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
