@@ -2,9 +2,7 @@ Pi Picture Frame
 ==========
 A way to turn your Raspberry Pi 3 into a digital picture frame!
 
-Build Status
---------------
-[![Build Status](https://travis-ci.org/xforever1313/PiPictureFrame.svg?branch=master)](https://travis-ci.org/xforever1313/PiPictureFrame)
+This is now archived as it uses older versions of Mono.  See [RaspPiPictureFrame](https://github.com/xforever1313/RaspPiPictureFrame) for a more modern implementation.
 
 Installing
 --------------
